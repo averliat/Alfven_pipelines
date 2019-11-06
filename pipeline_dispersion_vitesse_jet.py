@@ -21,10 +21,10 @@ import os
 #-------------------------------------------------------
 #Entrer le nom de la simulation et le numero de l'output    
 #-------------------------------------------------------
-simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_50pourc'
+simu = 'M30_mu7_mach2_lr_jets_co30_vjets66'
 
 owner = 'averliat_alfven'
-output = 59
+output = 60
 
 
 dir_save = 'Gradient_vitesse'  #Repertoire de sauvegarde des figures
@@ -34,8 +34,8 @@ save = True
 
 #Caracteristiques des coquilles en AU:
 R_min = 1
-R_max = 10000  #='all' pour prendre toute la boite
-dr = 50  #En fait pas vriament dr si on est en log(r), fixe le nombre de points
+R_max = 'all'#10000  #='all' pour prendre toute la boite
+dr = 100  #En fait pas vraiment dr si on est en log(r), fixe le nombre de points
 
 
 #Sauvegarde des quantites finales:
@@ -55,6 +55,8 @@ if owner=='sapanais':
     path='/dsm/anais/storageA/magmist/'+simu+'/'
 if owner=='averliat_alfven':
     path='/drf/projets/alfven-data/averliat/'+simu+'/'
+if owner=='phennebe_alfven':
+    path='/drf/projets/alfven-data/phennebe/'+simu+'/'
 
 #path_save='/home/averliat/these/analyses/'+simu+'/'+dir_save+'/'
 path_analyse='/home/averliat/these/analyses/'+simu+'/'
@@ -108,6 +110,8 @@ arg_centre = np.argmax(rho)
 center = [pos[:,0][arg_centre],pos[:,1][arg_centre],pos[:,2][arg_centre]]
 vel_center = [vel[:,0][arg_centre],vel[:,1][arg_centre],vel[:,2][arg_centre]**2]
 
+if R_max=='all':
+    R_max=lbox_au/2.
 nbr_shell = int((R_max-R_min)/dr)  #nombre de coquilles
 #shells_au=np.linspace(R_min,R_max,nbr_shell)  #rayon des coquilles en AU
 shells_au=np.logspace(np.log10(R_min),np.log10(R_max),nbr_shell)  #rayon des coquilles en AU

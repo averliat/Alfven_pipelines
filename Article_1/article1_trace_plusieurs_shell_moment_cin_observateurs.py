@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import matplotlib.pyplot as plt
-import article1_trace_shell_moment_cin_observateurs as tsmco
+import trace_shell_moment_cin_observateurs as tsmco
 import pipeline_temps_0_simulation as t_0
 import os
 
+
 plt.style.use("pdf")
 plt.style.use("aanda_modif")
-
-
 
 
 '''
@@ -60,11 +59,11 @@ for i in range(len(tag)):
 
 
 
-tag=['0pourc','10pourc','20pourc','30pourc','40pourc','50pourc','60pourc']
-legend=[r'0 \%', r'10 \%', r'20 \%', r'30 \%', r'40 \%', r'50 \%', r'60 \%']
-marker=['.','v','p','s','*','<','>']
+tag=['10','20','30','40','50','60']
+legend=['8, 10*40','8, 10*40','8, 10*40','8, 10*40','8, 10*40','8, 10*40']
+marker=['v','p','s','*','<','>']
 
-output_max=[41, 99, 93, 100, 97, 110, 97]
+output_max=[99, 93, 100, 97, 110, 97]
 
 #t1=[0.09912+6.95e-6, 0.09708-5.41e-4, 0.09653+5.72e-4-6.75e-5, 0.09243+2.72e-5, 0.09068-5.16e-4, 0.09068+1.84e-6, 0.0]
 #t1=[0,0,0,0,0,0,0]
@@ -73,7 +72,7 @@ base_simu='B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_'
 t1=[]
 seuil_rho = 1e-10
 for i in range(len(tag)):
-    path_analyses='/home/averliat/these/analyses/'+base_simu+tag[i]+'/'
+    path_analyses='/home/averliat/these/analyses/'+base_simu+tag[i]+'pourc/'
     if os.path.isfile(path_analyses+'t0_seuil_rho_'+str(seuil_rho)+'.txt') == False:
         ref = np.array(t_0.temps_0_simu(path_t0, seuil_rho, sortie_output=1))
         np.savetxt(path_analyses+'t0_seuil_rho_'+str(seuil_rho)+'.txt', ref)
@@ -83,20 +82,19 @@ for i in range(len(tag)):
 
 
 
-width_bar=[1,1,1,1,1,1,1]
+width_bar=[1,1,1,1,1,1]
 
 hist=False
 diff_abs=False
-diff_relat=True
+diff_relat=False
 moyenne_glissante=True
-article1=False
 
-save=False #Laisser a False, le save est modifie dans la boucle
-save_plusieurs=True
 
 
 for i in range(len(tag)):
-    if (i==len(tag)-1 and save_plusieurs==True):
-        save=True
     i=len(tag)-i-1
-    tsmco.trace_moment_cin_all(base_simu+tag[i],tag[i],1,output_max[i],width_bar[i],hist,diff_abs,diff_relat,legend[i],marker[i],t1[i],moyenne_glissante=moyenne_glissante,save=save,article1=article1,save_plusieurs=save_plusieurs)
+    tsmco.trace_moment_cin_all(base_simu+tag[i]+'pourc',tag[i],1,output_max[i],width_bar[i],hist,diff_abs,diff_relat,legend[i],marker[i],t1[i],moyenne_glissante=moyenne_glissante)
+
+
+plt.tight_layout(pad=0.25) #pad en inch si besoin
+plt.savefig('/home/averliat/these/analyses/article1_figures/Comparaison_difference_relative_moment_cin_reel_analytique.pdf')

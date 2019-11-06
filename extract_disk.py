@@ -241,7 +241,7 @@ def pdf_to_singledisc_rad(path,num,path_out=None,force=False,ps=False,xmin=0,xma
     
 
     if(np.sum(mask) <= 1):
-        return time, 0., 0., 0., 0. , log_rho_disk, mag_mean_broad #, max_rad_disk, mean_rad_disk, mean_out_rad_disk
+        return time, 0., 0., 0., 0. , log_rho_disk, mag_mean_broad, 0., 0. #, max_rad_disk, mean_rad_disk, mean_out_rad_disk
 
 
     pos_disk_x = pos_disk_x[mask]
@@ -296,6 +296,7 @@ def pdf_to_singledisc_rad(path,num,path_out=None,force=False,ps=False,xmin=0,xma
 
     #mean disk radius
     mean_rad_disk = np.mean(rad_disk)
+    median_rad_disk = np.median(rad_disk)
 
     
     arg_d = np.argsort(rad_disk)
@@ -312,7 +313,7 @@ def pdf_to_singledisc_rad(path,num,path_out=None,force=False,ps=False,xmin=0,xma
 
 
     #now look at the maximum in a series of direction
-    ndir = 50
+    ndir = 500
     rad_loc_v = np.zeros(ndir)
     cos_min=-1.
     cos_max = cos_min + 2./(ndir+1)
@@ -335,21 +336,55 @@ def pdf_to_singledisc_rad(path,num,path_out=None,force=False,ps=False,xmin=0,xma
         cos_max = cos_max + 2./(ndir+1)
 
 
-    max_rad_loc = np.max(rad_loc_v) * lbox * pc / AU
+    max_rad_loc = np.max(rad_loc_v[rad_loc_v<500/lbox/pc*AU]) * lbox * pc / AU
 
-    min_rad_loc = np.min(rad_loc_v) * lbox * pc / AU
+    min_rad_loc = np.min(rad_loc_v[rad_loc_v<500/lbox/pc*AU]) * lbox * pc / AU
 
-    mean_rad_loc = np.mean(rad_loc_v) * lbox * pc / AU
+    mean_rad_loc = np.mean(rad_loc_v[rad_loc_v<500/lbox/pc*AU]) * lbox * pc / AU
+
+    median_rad_loc = np.median(rad_loc_v[rad_loc_v<500/lbox/pc*AU]) * lbox * pc / AU
+
+
+    #--------------------------
+    #Ajout par AV pour essayer de mieux estimer la taille des disques
+    rad_loc_v = rad_loc_v*lbox*pc/AU  #listes des rayons en AU
+    
+    taille_bin = 4 #AU
+    largeur_modale = 2
+
+    min_serie = np.floor(np.min(rad_loc_v))
+    min_serie -= min_serie%taille_bin
+    max_serie = np.floor(np.max(rad_loc_v))+1
+    max_serie += (taille_bin-max_serie%taille_bin)
+
+    nbr_bin=(max_serie-min_serie)/taille_bin
+    bins=np.arange(nbr_bin)*taille_bin+min_serie+taille_bin/2.
+
+    count=np.zeros(len(bins))
+    
+    for i in range(len(rad_loc_v)):
+        ind=np.int(np.floor((rad_loc_v[i]-min_serie)/taille_bin))
+        count[ind] += 1
+
+    bin_central = bins[np.argmax(count)]
+    lim_inf = bin_central -taille_bin/2. -largeur_modale*taille_bin
+    lim_sup = bin_central +taille_bin/2. +largeur_modale*taille_bin
+
+    rad_new=rad_loc_v[rad_loc_v>lim_inf]
+    rad_new=rad_new[rad_new<lim_sup]
+
+    rad_estim = np.median(rad_new)
+    #--------------------------
+
 
 
     mean_rad_disk =  mean_rad_disk * lbox * pc / AU
 
     mean_out_rad_disk = mean_out_rad_disk * lbox * pc / AU
 
-
 #    pdb.set_trace() # debug mode     
 
-    return time, mass_disk, max_rad_loc, min_rad_loc, mean_rad_loc, log_rho_disk, mag_mean_broad #, max_rad_disk, mean_rad_disk, mean_out_rad_disk
+    return time, mass_disk, max_rad_loc, min_rad_loc, mean_rad_loc, log_rho_disk, mag_mean_broad, median_rad_loc, rad_estim #, max_rad_disk, mean_rad_disk, mean_out_rad_disk
 ##########################################################
 ##########################################################
 ##do series of analysis
@@ -686,12 +721,12 @@ def pdf_to_singledisc_cells(path,num,path_out=None,force=False,ps=False,xmin=0,x
     pos_disk_y = pos[:,1][mask_rho_disk] - pos_max_y
     pos_disk_z = pos[:,2][mask_rho_disk] - pos_max_z
 
-    #position of maximum density cell
+    #velocity of maximum density cell
     vel_max_x = cells['vel'][:,0][mask_rho_max][0]
     vel_max_y = cells['vel'][:,1][mask_rho_max][0]
     vel_max_z = cells['vel'][:,2][mask_rho_max][0]
 
-    #position of disk cell
+    #velocity of disk cell
     vel_disk_x = cells['vel'][:,0][mask_rho_disk] - vel_max_x
     vel_disk_y = cells['vel'][:,1][mask_rho_disk] - vel_max_y
     vel_disk_z = cells['vel'][:,2][mask_rho_disk] - vel_max_z
@@ -741,3 +776,128 @@ def pdf_to_singledisc_cells(path,num,path_out=None,force=False,ps=False,xmin=0,x
     #mean_rad_disk = np.mean(rad_disk)
 
     return mask_rho_disk, mask
+
+
+
+
+
+##########################################################
+#Modification of the pdf_to_singledisc_cells function :
+#it identifies the disk by looking at the miminim of the mass weighted PDF 
+#then ask that Vrad / Vpar < 0.5 (i.e. rotation dominates infall)
+#here assume a single disk - results are not correct if more than one disk
+#it also assumes that the density maximum belongs to the disk and is close to its center
+#it return the cells that belong to the disk
+##########################################################
+def pdf_to_singledisc_for_plot(path,num,path_out=None,force=False,ps=False,xmin=0,xmax=1.,ymin=0,ymax=1.,zmin=0.,zmax=1.,tag='',order='<',do_plot=False):
+
+    print(num)
+
+
+    #get the mass weighted density prob density function
+    hist_logrho,hist_rho_edges = get_rhopdf(path,num,path_out=path_out,force=force,ps=ps,xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,zmin=zmin,zmax=zmax,tag=tag,order=order,do_plot=do_plot)
+
+
+    nbin = len(hist_logrho)
+
+    mask_min = hist_rho_edges[0:nbin] > 8. 
+    mask_max = hist_rho_edges[0:nbin] < 11.
+
+    mask = mask_min*mask_max
+
+
+    amin = np.argmin(hist_logrho[mask])
+
+    #density at the disk edge
+    log_rho_disk = hist_rho_edges[0:nbin][mask][amin]
+
+    print 'log_rho_disk', log_rho_disk
+
+    rho_min_disk=10**log_rho_disk
+
+
+
+
+
+#    pdb.set_trace() # debug mode     
+
+    ro=pymses.RamsesOutput(path,num)
+    lbox=ro.info['boxlen'] #boxlen in codeunits (=>pc)
+
+    AU,pc,Ms,Myr,scale_n,scale_d,scale_t,scale_l,scale_v,scale_T2,scale_ener,scale_mag,microG,km_s,Cwnm,scale_mass,unit_col,lbox_pc = me.normalisation_averliat(ro)
+
+    #time = ro.info['time'] * scale_t / Myr
+
+    amr = ro.amr_source(["rho","vel"])#,"Br"])
+
+    cell_source = CellsToPoints(amr)
+    cells = cell_source.flatten()
+    dx = cells.get_sizes()
+
+    pos = cells.points
+
+
+    #cells belonging to the disk
+    mask_rho_disk = np.log10(cells['rho']) > log_rho_disk
+    
+    print 'disk cell number',np.sum(mask_rho_disk)
+
+    #mean magnetic field in the whole selected region
+    #mrd=mask_rho_disk
+
+    #volume of the selected region 
+    #vol = np.sum(dx[mrd]**3)
+
+    #mag_mean_broad=np.sum(np.sqrt((cells['Br'][:,0][mrd]**2+cells['Br'][:,1][mrd]**2+cells['Br'][:,2][mrd]**2))*dx[mrd]**3)/vol
+
+    #normalise it in cgs
+    #mag_mean_broad = mag_mean_broad*scale_mag
+
+
+    #maximum density cell
+    mask_rho_max = cells['rho'] == np.max(cells['rho'])
+
+    #mass disk
+    #mass_disk = np.sum(dx[mask_rho_disk]**3 * cells['rho'][mask_rho_disk])
+    #mass_disk = mass_disk * scale_mass / Ms
+
+    #position of maximum density cell
+    pos_max_x = pos[:,0][mask_rho_max][0]
+    pos_max_y = pos[:,1][mask_rho_max][0]
+    pos_max_z = pos[:,2][mask_rho_max][0]
+
+
+    #velocity of maximum density cell
+    vel_max_x = cells['vel'][:,0][mask_rho_max][0]
+    vel_max_y = cells['vel'][:,1][mask_rho_max][0]
+    vel_max_z = cells['vel'][:,2][mask_rho_max][0]
+
+
+    
+    
+    #if(np.sum(mask) <= 1):
+    #    return time, 0., 0., 0., 0. , log_rho_disk, mag_mean_broad #, max_rad_disk, mean_rad_disk, mean_out_rad_disk
+
+
+    #pos_disk_x = pos_disk_x[mask]
+    #pos_disk_y = pos_disk_y[mask]
+    #pos_disk_z = pos_disk_z[mask]
+
+    #vel_disk_x = vel_disk_x[mask]
+    #vel_disk_y = vel_disk_y[mask]
+    #vel_disk_z = vel_disk_z[mask]
+
+
+
+
+
+    #radius of disk cells
+#    rad_disk = np.sqrt( (pos_disk[:,0]-pos_max_x)**2 + (pos_disk[:,1]-pos_max_y)**2 + (pos_disk[:,2]-pos_max_z)**2 )
+    #rad_disk = np.sqrt( (pos_disk_x)**2 + (pos_disk_y)**2 + (pos_disk_z)**2 )
+
+
+
+    #mean disk radius
+    #mean_rad_disk = np.mean(rad_disk)
+
+    return rho_min_disk,pos_max_x,pos_max_y,pos_max_z,vel_max_x,vel_max_y,vel_max_z

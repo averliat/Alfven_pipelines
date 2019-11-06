@@ -9,6 +9,8 @@ from pymses.filters import CellsToPoints
 from pymses.utils import constants as cst
 from pymses.analysis import Camera, raytracing, slicing
 from pymses.analysis import ScalarOperator, FractionOperator, MaxLevelOperator
+from pymses.analysis import slicing
+
 import matplotlib.pyplot as plt
 plt.ion()
 from matplotlib.colors import Normalize
@@ -28,13 +30,13 @@ import pipeline_temps_0_simulation as t_0
 #-------------------------------------------------------
 #Entree le nom de la simulation et le numero de l'output
 #-------------------------------------------------------
-simu = 'M30_mu7_mach2_lr_jets_co30_vjets66'#'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_MHD_lr'
+simu = 'M30_mu7_mach2_lr_jets_co30_vjets66'
 
 owner = 'averliat_alfven'
 num_output = 193
 
 save = True
-dir_save = 'Coupe_vitesse_integree'
+dir_save = 'Densite_coupe'
 
 radius_zoom = 13
 
@@ -44,8 +46,10 @@ title_time=True
 title_time_cor=False
 seuil_rho = 1e-10
 
-fleche_vel = False
-nbre_fleche = 20  #En fait plus c'est faible plus y'a de fleches...
+fleche_vel = True
+nbre_fleche = 25  #En fait plus c'est faible plus y'a de fleches...
+quiver_color_dens='black'
+quiver_color_vel='DarkMagenta'
 
 
 selon_x = True
@@ -62,6 +66,7 @@ color_sink_colmap = 'firebrick'
 transparence_sink_colmap = 0.4
 color_sink_velmap = 'limegreen'
 transparence_sink_velmap = 0.7
+force_no_sink_plot = False
 
 reposition_fig = True #Pour repositionner les figures ouvertes par matplotlib
 
@@ -185,7 +190,7 @@ elif radius_zoom==12:
 elif radius_zoom==13:
     radius=0.055
 elif radius_zoom==14:
-    radius=0.055/2.
+    radius=0.6
 else:
     radius=zoom_v[radius_zoom-1]
 #radius=float(zoom_v[np.where(zoom_v==radius_zoom)])     #0.015#0.005 #Niveau de zoom correspondant au niveau '3' des images de "pipeline_image_unique.py"
@@ -242,12 +247,12 @@ if os.path.isfile(path+'output_'+str(num_output).zfill(5)+'/sink_'+str(num_outpu
         if 'cluster' in simu:
             size_sinks /= 10
 
-        if radius_zoom != 5:  #centrage sur la plus grosse sink au lieu de rho max
-            arg_biggest_sink=np.argmax(m_sinks)
-            x_biggest_sink=x_sinks[arg_biggest_sink]/lbox_au
-            y_biggest_sink=y_sinks[arg_biggest_sink]/lbox_au
-            z_biggest_sink=z_sinks[arg_biggest_sink]/lbox_au
-            center=[x_biggest_sink,y_biggest_sink,z_biggest_sink]
+        #if radius_zoom != 5:  #centrage sur la plus grosse sink au lieu de rho max
+        arg_biggest_sink=np.argmax(m_sinks)
+        x_biggest_sink=x_sinks[arg_biggest_sink]/lbox_au
+        y_biggest_sink=y_sinks[arg_biggest_sink]/lbox_au
+        z_biggest_sink=z_sinks[arg_biggest_sink]/lbox_au
+        center=[x_biggest_sink,y_biggest_sink,z_biggest_sink]
 
 
 
@@ -282,86 +287,72 @@ if selon_x==True:
     cam_x = Camera(center=center,line_of_sight_axis='x',region_size=[2.*radius,2.*radius],distance=radius,far_cut_depth=radius,up_vector='z',map_max_size=512)
 
     rho_op = ScalarOperator(lambda dset: dset["rho"] ,  ro.info["unit_density"])
-    rt = raytracing.RayTracer(amr,ro.info,rho_op)
-    datamap = rt.process(cam_x, surf_qty=True)
-    map_col = np.log10(datamap.map.T*lbox_cm)
+    map = slicing.SliceMap(amr,cam_x,rho_op,z=0.0)
+    map_col = np.log10(map.map.T)  #Map deja en cm-3, puis on prend le log 
 
     if v_proj == True:
-        Vx_op = ScalarOperator(lambda dset: dset["vel"][...,0]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vx_op)
-        datamap_vx = rt.process(cam_x, surf_qty=True)
-        map_Vx = datamap_vx.map.T / datamap.map.T * factor_vel_km_s
+        Vx_op = ScalarOperator(lambda dset: dset["vel"][...,0] ,  ro.info["unit_velocity"])
+        datamap_vx = slicing.SliceMap(amr,cam_x,Vx_op,z=0.0)
+        map_Vx = datamap_vx.map.T * factor_vel_km_s
 
 
     if fleche_vel == True:
-        Vy_depuis_x_op = ScalarOperator(lambda dset: dset["vel"][...,1]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vy_depuis_x_op)
-        datamap_vy_depuis_x = rt.process(cam_x, surf_qty=True)
-        map_vy_depuis_x = datamap_vy_depuis_x.map.T / datamap.map.T * factor_vel_km_s
+        Vy_depuis_x_op = ScalarOperator(lambda dset: dset["vel"][...,1] ,  ro.info["unit_velocity"])
+        datamap_vy_depuis_x = slicing.SliceMap(amr,cam_x,Vy_depuis_x_op,z=0.0)
+        map_vy_depuis_x = datamap_vy_depuis_x.map.T * factor_vel_km_s
         map_vy_depuis_x_red = map_vy_depuis_x[::nbre_fleche, ::nbre_fleche]
 
-        Vz_depuis_x_op = ScalarOperator(lambda dset: dset["vel"][...,2]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vz_depuis_x_op)
-        datamap_vz_depuis_x = rt.process(cam_x, surf_qty=True)
-        map_vz_depuis_x = datamap_vz_depuis_x.map.T / datamap.map.T * factor_vel_km_s
+        Vz_depuis_x_op = ScalarOperator(lambda dset: dset["vel"][...,2] ,  ro.info["unit_velocity"])
+        datamap_vz_depuis_x = slicing.SliceMap(amr,cam_x,Vz_depuis_x_op,z=0.0)
+        map_vz_depuis_x = datamap_vz_depuis_x.map.T * factor_vel_km_s
         map_vz_depuis_x_red = map_vz_depuis_x[::nbre_fleche, ::nbre_fleche]
 
 
-        plt.figure()
-        im = plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower')
-        plt.xlabel('$y$ (AU)')
-        plt.ylabel('$z$ (AU)')
-        cbar=plt.colorbar()
-        cbar.set_label(r'$log(N) \, \, (cm^{-2})$')
-        if title_time==True:
-            plt.title('Time = '+str(int(simulation_time))+' years')
-        if title_time_cor==True:
-            plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
-        if radius_zoom==5:
-            plt.xlim([0,lbox_au])
-            plt.ylim([0,lbox_au])
-        if save==True:
-            plt.savefig(path_save+'dens_x_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
+    plt.figure()
+    im = plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)
+    if sink_plot==True and force_no_sink_plot==False:
+        for i in range(len(m_sinks)):
+            if (y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au)&(z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au):
+                if (x_sinks[i]>(-radius/20.+center[0])*lbox_au)&(x_sinks[i]<(radius/20.+center[0])*lbox_au):
+                    plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_colmap,markersize=size_sinks[i],alpha=transparence_sink_colmap)
+    plt.xlabel('$y$ (AU)')
+    plt.ylabel('$z$ (AU)')
+    cbar=plt.colorbar()
+    if title_time==True:
+        plt.title('Time = '+str(int(simulation_time))+' years')
+    if title_time_cor==True:
+        plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
+    cbar.set_label(r'$log(n) \, \, (cm^{-3})$')
+    if radius_zoom==5:
+        plt.xlim([0,lbox_au])
+        plt.ylim([0,lbox_au])
+    if save==True:
+        plt.savefig(path_save+'dens_cut_x_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
 
+    
+
+    if fleche_vel == True:
         nx = map_vy_depuis_x_red.shape[0]
         ny = map_vy_depuis_x_red.shape[1]
-        vec_x = (np.arange(nx)*2./nx*radius - radius + center[0] + radius/nx)*lbox_au
-        vec_y = (np.arange(ny)*2./ny*radius - radius + center[1] + radius/nx)*lbox_au
+        vec_x = (np.arange(nx)*2./nx*radius - radius + center[1] + radius/nx)*lbox_au
+        vec_y = (np.arange(ny)*2./ny*radius - radius + center[2] + radius/nx)*lbox_au
         xx,yy = np.meshgrid(vec_x,vec_y)
 
-        plt.quiver(xx,yy,map_vy_depuis_x_red,map_vz_depuis_x_red)
-
-
-    else:
-        plt.figure()
-        plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)   
-        if sink_plot==True:
-            for i in range(len(m_sinks)):
-                if (y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au)&(z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au):
-                    plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_colmap,markersize=size_sinks[i],alpha=transparence_sink_colmap)
-        plt.xlabel('$y$ (AU)')     
-        plt.ylabel('$z$ (AU)')
-        cbar = plt.colorbar()
-        if title_time==True:
-            plt.title('Time = '+str(int(simulation_time))+' years')
-        if title_time_cor==True:
-            plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
-        cbar.set_label(r'$log(N) \, \, (cm^{-2})$')
-        if radius_zoom==5:
-            plt.xlim([0,lbox_au])
-            plt.ylim([0,lbox_au])
+        plt.quiver(xx,yy,map_vy_depuis_x_red,map_vz_depuis_x_red,color=quiver_color_dens)
         if save==True:
-            plt.savefig(path_save+'dens_x_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')
+            plt.savefig(path_save+'dens_cut_overplotvel_x_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
+
 
 
     if v_proj == True:
         plt.figure()
         norm = MidpointNormalize(midpoint=0)  #Pour avoir le centre de la colormap a 0
         plt.imshow(-map_Vx,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
-        if sink_plot==True:
+        if sink_plot==True and force_no_sink_plot==False:
             for i in range(len(m_sinks)):
                 if (y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au)&(z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au):
-                    plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_velmap,markersize=size_sinks[i],alpha=transparence_sink_velmap)
+                    if (x_sinks[i]>(-radius/20.+center[0])*lbox_au)&(x_sinks[i]<(radius/20.+center[0])*lbox_au):
+                        plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_velmap,markersize=size_sinks[i],alpha=transparence_sink_velmap)
         plt.xlabel('$y$ (AU)')     
         plt.ylabel('$z$ (AU)')
         cbar = plt.colorbar()         
@@ -374,8 +365,12 @@ if selon_x==True:
             plt.xlim([0,lbox_au])
             plt.ylim([0,lbox_au])
         if save==True:
-            plt.savefig(path_save+'vel_x_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')
+            plt.savefig(path_save+'vel_cut_x_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')
 
+        if fleche_vel == True:
+            plt.quiver(xx,yy,map_vy_depuis_x_red,map_vz_depuis_x_red,color=quiver_color_vel)
+            if save==True:
+                plt.savefig(path_save+'vel_cut_overplotvel_x_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
 
 
 if selon_y==True:
@@ -385,86 +380,72 @@ if selon_y==True:
     cam_y = Camera(center=center,line_of_sight_axis='y',region_size=[2.*radius,2.*radius],distance=radius,far_cut_depth=radius,up_vector='x',map_max_size=512)
 
     rho_op = ScalarOperator(lambda dset: dset["rho"] ,  ro.info["unit_density"])
-    rt = raytracing.RayTracer(amr,ro.info,rho_op)
-    datamap = rt.process(cam_y, surf_qty=True)
-    map_col = np.log10(datamap.map.T*lbox_cm)
+    map = slicing.SliceMap(amr,cam_y,rho_op,z=0.0)
+    map_col = np.log10(map.map.T)  #Map deja en cm-3, puis on prend le log 
 
     if v_proj == True:
-        Vy_op = ScalarOperator(lambda dset: dset["vel"][...,1]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vy_op)
-        datamap_vy = rt.process(cam_y, surf_qty=True)
-        map_Vy = datamap_vy.map.T / datamap.map.T * factor_vel_km_s
+        Vy_op = ScalarOperator(lambda dset: dset["vel"][...,1] ,  ro.info["unit_velocity"])
+        datamap_vy = slicing.SliceMap(amr,cam_y,Vy_op,z=0.0)
+        map_Vy = datamap_vy.map.T * factor_vel_km_s
 
 
     if fleche_vel == True:
-        Vx_depuis_y_op = ScalarOperator(lambda dset: dset["vel"][...,0]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vx_depuis_y_op)
-        datamap_vx_depuis_y = rt.process(cam_y, surf_qty=True)
-        map_vx_depuis_y = datamap_vx_depuis_y.map.T / datamap.map.T * factor_vel_km_s
+        Vx_depuis_y_op = ScalarOperator(lambda dset: dset["vel"][...,0] ,  ro.info["unit_velocity"])
+        datamap_vx_depuis_y = slicing.SliceMap(amr,cam_y,Vx_depuis_y_op,z=0.0)
+        map_vx_depuis_y = datamap_vx_depuis_y.map.T * factor_vel_km_s
         map_vx_depuis_y_red = map_vx_depuis_y[::nbre_fleche, ::nbre_fleche]
 
-        Vz_depuis_y_op = ScalarOperator(lambda dset: dset["vel"][...,2]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vz_depuis_y_op)
-        datamap_vz_depuis_y = rt.process(cam_y, surf_qty=True)
-        map_vz_depuis_y = datamap_vz_depuis_y.map.T / datamap.map.T * factor_vel_km_s
+        Vz_depuis_y_op = ScalarOperator(lambda dset: dset["vel"][...,2] ,  ro.info["unit_velocity"])
+        datamap_vz_depuis_y = slicing.SliceMap(amr,cam_y,Vz_depuis_y_op,z=0.0)
+        map_vz_depuis_y = datamap_vz_depuis_y.map.T * factor_vel_km_s
         map_vz_depuis_y_red = map_vz_depuis_y[::nbre_fleche, ::nbre_fleche]
 
 
-        plt.figure()
-        im = plt.imshow(map_col,extent=[(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au,(-radius+center[0])*lbox_au,(radius+center[0])*lbox_au],origin='lower')
-        plt.xlabel('$z$ (AU)')     
-        plt.ylabel('$x$ (AU)')
-        cbar=plt.colorbar()                                                                                   
-        cbar.set_label(r'$log(N) \, \, (cm^{-2})$')
-        if title_time==True:
-            plt.title('Time = '+str(int(simulation_time))+' years')
-        if title_time_cor==True:
-            plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
-        if radius_zoom==5:
-            plt.xlim([0,lbox_au])
-            plt.ylim([0,lbox_au])
-        if save==True:
-            plt.savefig(path_save+'dens_y_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
+    plt.figure()
+    im = plt.imshow(map_col,extent=[(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au,(-radius+center[0])*lbox_au,(radius+center[0])*lbox_au],origin='lower')
+    if sink_plot==True and force_no_sink_plot==False:
+        for i in range(len(m_sinks)):
+            if (z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au)&(x_sinks[i]>(-radius+center[0])*lbox_au)&(x_sinks[i]<(radius+center[0])*lbox_au):
+                if (y_sinks[i]>(-radius/20.+center[1])*lbox_au)&(y_sinks[i]<(radius/20.+center[1])*lbox_au):
+                    plt.plot(z_sinks[i],x_sinks[i],'.',color=color_sink_colmap,markersize=size_sinks[i],alpha=transparence_sink_colmap)
+    plt.xlabel('$z$ (AU)')     
+    plt.ylabel('$x$ (AU)')
+    cbar=plt.colorbar()                                                                                   
+    if title_time==True:
+        plt.title('Time = '+str(int(simulation_time))+' years')
+    if title_time_cor==True:
+        plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
+    cbar.set_label(r'$log(n) \, \, (cm^{-3})$')
+    if radius_zoom==5:
+        plt.xlim([0,lbox_au])
+        plt.ylim([0,lbox_au])
+    if save==True:
+        plt.savefig(path_save+'dens_cut_y_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
 
+
+
+    if fleche_vel == True:
         nx = map_vx_depuis_y_red.shape[0]
         ny = map_vx_depuis_y_red.shape[1]
-        vec_x = (np.arange(nx)*2./nx*radius - radius + center[0] + radius/nx)*lbox_au
-        vec_y = (np.arange(ny)*2./ny*radius - radius + center[1] + radius/nx)*lbox_au
+        vec_x = (np.arange(nx)*2./nx*radius - radius + center[2] + radius/nx)*lbox_au
+        vec_y = (np.arange(ny)*2./ny*radius - radius + center[0] + radius/nx)*lbox_au
         xx,yy = np.meshgrid(vec_x,vec_y)
 
-        plt.quiver(xx,yy,map_vz_depuis_y_red,map_vx_depuis_y_red)
-
-
-    else:
-        plt.figure()
-        im = plt.imshow(map_col,extent=[(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au,(-radius+center[0])*lbox_au,(radius+center[0])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)   
-        if sink_plot==True:
-            for i in range(len(m_sinks)):
-                if (z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au)&(x_sinks[i]>(-radius+center[0])*lbox_au)&(x_sinks[i]<(radius+center[0])*lbox_au):
-                    plt.plot(z_sinks[i],x_sinks[i],'.',color=color_sink_colmap,markersize=size_sinks[i],alpha=transparence_sink_colmap)
-        plt.xlabel('$z$ (AU)')     
-        plt.ylabel('$x$ (AU)')
-        cbar=plt.colorbar()                                                                                   
-        cbar.set_label(r'$log(N) \, \, (cm^{-2})$')
-        if title_time==True:
-            plt.title('Time = '+str(int(simulation_time))+' years')
-        if title_time_cor==True:
-            plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
-        if radius_zoom==5:
-            plt.xlim([0,lbox_au])
-            plt.ylim([0,lbox_au])
+        plt.quiver(xx,yy,map_vz_depuis_y_red,map_vx_depuis_y_red,color=quiver_color_dens)
         if save==True:
-            plt.savefig(path_save+'dens_y_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight') 
+            plt.savefig(path_save+'dens_cut_overplotvel_y_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
+
 
 
     if v_proj == True:
         plt.figure()
         norm = MidpointNormalize(midpoint=0)  #Pour avoir le centre de la colormap a 0
         plt.imshow(-map_Vy,extent=[(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au,(-radius+center[0])*lbox_au,(radius+center[0])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
-        if sink_plot==True:
+        if sink_plot==True and force_no_sink_plot==False:
             for i in range(len(m_sinks)):
                 if (z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au)&(x_sinks[i]>(-radius+center[0])*lbox_au)&(x_sinks[i]<(radius+center[0])*lbox_au):
-                    plt.plot(z_sinks[i],x_sinks[i],'.',color=color_sink_velmap,markersize=size_sinks[i],alpha=transparence_sink_velmap)
+                    if (y_sinks[i]>(-radius/20.+center[1])*lbox_au)&(y_sinks[i]<(radius/20.+center[1])*lbox_au):
+                        plt.plot(z_sinks[i],x_sinks[i],'.',color=color_sink_velmap,markersize=size_sinks[i],alpha=transparence_sink_velmap)
         plt.xlabel('$z$ (AU)')     
         plt.ylabel('$x$ (AU)')
         cbar = plt.colorbar()          
@@ -477,7 +458,13 @@ if selon_y==True:
             plt.xlim([0,lbox_au])
             plt.ylim([0,lbox_au])
         if save==True:
-            plt.savefig(path_save+'vel_y_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')
+            plt.savefig(path_save+'vel_cut_y_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')
+
+        if fleche_vel == True:
+            plt.quiver(xx,yy,map_vz_depuis_y_red,map_vx_depuis_y_red,color=quiver_color_vel)
+            if save==True:
+                plt.savefig(path_save+'vel_cut_overplotvel_y_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
+
 
 
 
@@ -485,89 +472,75 @@ if selon_z==True:
     #--------------------------------------------
     #Calcul de la carte ou l'on regarde suivant z
     #--------------------------------------------
-    cam_z = Camera(center=center,line_of_sight_axis='z',region_size=[2.*radius,2.*radius],distance=radius,far_cut_depth=radius,up_vector='y',map_max_size=512)
+    cam_z = Camera(center=center,line_of_sight_axis='z',region_size=[2.*radius,2.*radius],up_vector='y',map_max_size=512)
 
     rho_op = ScalarOperator(lambda dset: dset["rho"] ,  ro.info["unit_density"])
-    rt = raytracing.RayTracer(amr,ro.info,rho_op)
-    datamap = rt.process(cam_z, surf_qty=True)
-    map_col = np.log10(datamap.map.T*lbox_cm)
+    map = slicing.SliceMap(amr,cam_z,rho_op,z=0.0)
+    map_col = np.log10(map.map.T)  #Map deja en cm-3, puis on prend le log 
 
     if v_proj == True:
-        Vz_op = ScalarOperator(lambda dset: dset["vel"][...,2]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vz_op)
-        datamap_vz = rt.process(cam_z, surf_qty=True)
-        map_Vz = datamap_vz.map.T / datamap.map.T * factor_vel_km_s
+        Vz_op = ScalarOperator(lambda dset: dset["vel"][...,2] ,  ro.info["unit_velocity"])
+        datamap_vz = slicing.SliceMap(amr,cam_z,Vz_op,z=0.0)
+        map_Vz = datamap_vz.map.T * factor_vel_km_s
 
 
     if fleche_vel == True:
-        Vx_depuis_z_op = ScalarOperator(lambda dset: dset["vel"][...,0]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vx_depuis_z_op)
-        datamap_vx_depuis_z = rt.process(cam_z, surf_qty=True)
-        map_vx_depuis_z = datamap_vx_depuis_z.map.T / datamap.map.T * factor_vel_km_s
+        Vx_depuis_z_op = ScalarOperator(lambda dset: dset["vel"][...,0] ,  ro.info["unit_velocity"])
+        datamap_vx_depuis_z = slicing.SliceMap(amr,cam_z,Vx_depuis_z_op,z=0.0)
+        map_vx_depuis_z = datamap_vx_depuis_z.map.T * factor_vel_km_s
         map_vx_depuis_z_red = map_vx_depuis_z[::nbre_fleche, ::nbre_fleche]
 
-        Vy_depuis_z_op = ScalarOperator(lambda dset: dset["vel"][...,1]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vy_depuis_z_op)
-        datamap_vy_depuis_z = rt.process(cam_z, surf_qty=True)
-        map_vy_depuis_z = datamap_vy_depuis_z.map.T / datamap.map.T * factor_vel_km_s
+        Vy_depuis_z_op = ScalarOperator(lambda dset: dset["vel"][...,1] ,  ro.info["unit_velocity"])
+        datamap_vy_depuis_z = slicing.SliceMap(amr,cam_z,Vy_depuis_z_op,z=0.0)
+        map_vy_depuis_z = datamap_vy_depuis_z.map.T * factor_vel_km_s
         map_vy_depuis_z_red = map_vy_depuis_z[::nbre_fleche, ::nbre_fleche]
 
 
-        plt.figure()
-        im = plt.imshow(map_col,extent=[(-radius+center[0])*lbox_au,(radius+center[0])*lbox_au,(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au],origin='lower')
-        plt.xlabel('$x$ (AU)')     
-        plt.ylabel('$y$ (AU)')
-        cbar=plt.colorbar()                                                                                   
-        cbar.set_label(r'$log(N) \, \, (cm^{-2})$')
-        if title_time==True:
-            plt.title('Time = '+str(int(simulation_time))+' years')
-        if title_time_cor==True:
-            plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
-        if radius_zoom==5:
-            plt.xlim([0,lbox_au])
-            plt.ylim([0,lbox_au])
-        if save==True:
-            plt.savefig(path_save+'dens_z_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
+    plt.figure()
+    im = plt.imshow(map_col,extent=[(-radius+center[0])*lbox_au,(radius+center[0])*lbox_au,(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au],origin='lower',vmin=vmin_dens,vmax=vmax_dens)
+    if sink_plot==True and force_no_sink_plot==False:
+        for i in range(len(m_sinks)):
+            if (x_sinks[i]>(-radius+center[0])*lbox_au)&(x_sinks[i]<(radius+center[0])*lbox_au)&(y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au):
+                if (z_sinks[i]>(-radius/20.+center[2])*lbox_au)&(z_sinks[i]<(radius/20.+center[2])*lbox_au):
+                    plt.plot(x_sinks[i],y_sinks[i],'.',color=color_sink_colmap,markersize=size_sinks[i],alpha=transparence_sink_colmap)
+    plt.xlabel('$x$ (AU)')     
+    plt.ylabel('$y$ (AU)')
+    cbar=plt.colorbar()                                                                                   
+    cbar.set_label(r'$log(n) \, \, (cm^{-3})$')
+    if title_time==True:
+        plt.title('Time = '+str(int(simulation_time))+' years')
+    if title_time_cor==True:
+        plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
+    if radius_zoom==5:
+        plt.xlim([0,lbox_au])
+        plt.ylim([0,lbox_au])
+    if save==True:
+        plt.savefig(path_save+'dens_cut_z_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
 
+
+
+    if fleche_vel == True:
         nx = map_vx_depuis_z_red.shape[0]
         ny = map_vx_depuis_z_red.shape[1]
         vec_x = (np.arange(nx)*2./nx*radius - radius + center[0] + radius/nx)*lbox_au
         vec_y = (np.arange(ny)*2./ny*radius - radius + center[1] + radius/nx)*lbox_au
         xx,yy = np.meshgrid(vec_x,vec_y)
 
-        plt.quiver(xx,yy,map_vx_depuis_z_red,map_vy_depuis_z_red)
-
-
-    else:
-        plt.figure()
-        im = plt.imshow(map_col,extent=[(-radius+center[0])*lbox_au,(radius+center[0])*lbox_au,(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)   
-        if sink_plot==True:
-            for i in range(len(m_sinks)):
-                if (x_sinks[i]>(-radius+center[0])*lbox_au)&(x_sinks[i]<(radius+center[0])*lbox_au)&(y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au):
-                    plt.plot(x_sinks[i],y_sinks[i],'.',color=color_sink_colmap,markersize=size_sinks[i],alpha=transparence_sink_colmap)
-        plt.xlabel('$x$ (AU)')     
-        plt.ylabel('$y$ (AU)')
-        cbar=plt.colorbar()                                                                  
-        cbar.set_label(r'$log(N) \, \, (cm^{-2})$')  
-        if title_time==True:
-            plt.title('Time = '+str(int(simulation_time))+' years')
-        if title_time_cor==True:
-            plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
-        if radius_zoom==5:
-            plt.xlim([0,lbox_au])
-            plt.ylim([0,lbox_au])
+        plt.quiver(xx,yy,map_vx_depuis_z_red,map_vy_depuis_z_red,color=quiver_color_dens)
         if save==True:
-            plt.savefig(path_save+'dens_z_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')
+            plt.savefig(path_save+'dens_cut_overplotvel_z_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
+
 
 
     if v_proj == True:
         plt.figure()
         norm = MidpointNormalize(midpoint=0)  #Pour avoir le centre de la colormap a 0
         plt.imshow(-map_Vz,extent=[(-radius+center[0])*lbox_au,(radius+center[0])*lbox_au,(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
-        if sink_plot==True:
+        if sink_plot==True and force_no_sink_plot==False:
             for i in range(len(m_sinks)):
                 if (x_sinks[i]>(-radius+center[0])*lbox_au)&(x_sinks[i]<(radius+center[0])*lbox_au)&(y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au):
-                    plt.plot(x_sinks[i],y_sinks[i],'.',color=color_sink_velmap,markersize=size_sinks[i],alpha=transparence_sink_velmap)
+                    if (z_sinks[i]>(-radius/20.+center[2])*lbox_au)&(z_sinks[i]<(radius/20.+center[2])*lbox_au):
+                        plt.plot(x_sinks[i],y_sinks[i],'.',color=color_sink_velmap,markersize=size_sinks[i],alpha=transparence_sink_velmap)
         plt.xlabel('$x$ (AU)')     
         plt.ylabel('$y$ (AU)')
         cbar = plt.colorbar()          
@@ -580,9 +553,12 @@ if selon_z==True:
             plt.xlim([0,lbox_au])
             plt.ylim([0,lbox_au])
         if save==True:
-            plt.savefig(path_save+'vel_z_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')
+            plt.savefig(path_save+'vel_cut_z_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')
 
-
+        if fleche_vel == True:
+            plt.quiver(xx,yy,map_vx_depuis_z_red,map_vy_depuis_z_red,color=quiver_color_vel)
+            if save==True:
+                plt.savefig(path_save+'vel_cut_overplotvel_z_'+str(radius_zoom)+'_'+str(num_output)+'.pdf', bbox_inches='tight')  
 
 
 

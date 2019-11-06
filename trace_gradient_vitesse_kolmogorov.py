@@ -33,7 +33,7 @@ if __name__=='__main__':
     dr = 500
 
 
-    save_fig = True
+    save_fig = False
 
 
 

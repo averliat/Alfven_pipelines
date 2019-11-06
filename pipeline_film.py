@@ -24,14 +24,14 @@ import pipeline_temps_0_simulation as t_0
 #-------------------------------------------------------
 #Entree le nom de la simulation et le numero de l'output
 #-------------------------------------------------------
-simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_50pourc'
+simu = 'jet_test_24'#'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_50pourc'
 
 owner = 'averliat_alfven'
 
-output_min = 59
-output_max = 110
+output_min = 1
+output_max = 67
 
-dir_save = 'Test_film_png'
+dir_save = 'Test_film'
 
 
 
@@ -44,7 +44,7 @@ def image(simu, owner, num_output, dir_save):
 
     save = True
 
-    radius_zoom = 3
+    radius_zoom = 1
 
     v_proj = True
 
@@ -60,11 +60,11 @@ def image(simu, owner, num_output, dir_save):
     selon_y = True
     selon_z = True
 
-    vmin_vel = -4.5
-    vmax_vel = -vmin_vel
+    vmin_vel = None #-4.5
+    vmax_vel = None #-vmin_vel
 
-    vmin_dens = 22.7
-    vmax_dens = 28.9
+    vmin_dens = None #22.7
+    vmax_dens = None #28.9
 
     color_sink_colmap = 'firebrick'
     transparence_sink_colmap = 0.4
@@ -235,12 +235,12 @@ def image(simu, owner, num_output, dir_save):
             #size_sinks=20*np.tanh(25*m_sinks)
             size_sinks=20*np.sqrt(m_sinks)
 
-        if radius_zoom != 5:  #centrage sur la plus grosse sink au lieu de rho max
-            arg_biggest_sink=np.argmax(m_sinks)
-            x_biggest_sink=x_sinks[arg_biggest_sink]/lbox_au
-            y_biggest_sink=y_sinks[arg_biggest_sink]/lbox_au
-            z_biggest_sink=z_sinks[arg_biggest_sink]/lbox_au
-            center=[x_biggest_sink,y_biggest_sink,z_biggest_sink]
+            if radius_zoom != 5:  #centrage sur la plus grosse sink au lieu de rho max
+                arg_biggest_sink=np.argmax(m_sinks)
+                x_biggest_sink=x_sinks[arg_biggest_sink]/lbox_au
+                y_biggest_sink=y_sinks[arg_biggest_sink]/lbox_au
+                z_biggest_sink=z_sinks[arg_biggest_sink]/lbox_au
+                center=[x_biggest_sink,y_biggest_sink,z_biggest_sink]
 
 
 

@@ -13,11 +13,11 @@ import pipeline_temps_0_simulation as t_0
 #-------------------------------------------------------
 #Entrer le nom de la simulation et le numero de l'output	
 #-------------------------------------------------------
-simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_rot1'
+simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_MHD_lr'
 owner = 'averliat_alfven'
 
-output_min = 'None'
-output_max = 30
+output_min = 292#'None'
+output_max = 367
 
 seuil_rho = 1e-10
 
@@ -65,7 +65,7 @@ nmbr_output = output_max - output_min + 1
 #Creation des tableaux de sauvegarde
 #-----------------------------------
 if save_tab == True:
-	file_save = 'Rayon_disque_par_pdf'+str(output_min)+'_'+str(output_max)+'.hdf5'
+	file_save = 'Rayon_disque_par_pdf_modal_bin4_'+str(output_min)+'_'+str(output_max)+'.hdf5'
 
 
 
@@ -81,6 +81,8 @@ min_rad_loc_tab = np.zeros(nmbr_output)
 mean_rad_loc_tab = np.zeros(nmbr_output)
 log_rho_disk_tab = np.zeros(nmbr_output)
 mag_mean_broad_tab = np.zeros(nmbr_output)
+median_rad_loc_tab = np.zeros(nmbr_output)
+rad_estim_tab = np.zeros(nmbr_output)
 
 
 
@@ -110,7 +112,7 @@ for i in range(nmbr_output):
     verif=1
     output_manquant=0
 
-    time_tab[nbre_output_effectif], mass_disk_tab[nbre_output_effectif], max_rad_loc_tab[nbre_output_effectif], min_rad_loc_tab[nbre_output_effectif], mean_rad_loc_tab[nbre_output_effectif], log_rho_disk_tab[nbre_output_effectif], mag_mean_broad_tab[nbre_output_effectif] = ed.pdf_to_singledisc_rad(path=path, num=num)
+    time_tab[nbre_output_effectif], mass_disk_tab[nbre_output_effectif], max_rad_loc_tab[nbre_output_effectif], min_rad_loc_tab[nbre_output_effectif], mean_rad_loc_tab[nbre_output_effectif], log_rho_disk_tab[nbre_output_effectif], mag_mean_broad_tab[nbre_output_effectif], median_rad_loc_tab[nbre_output_effectif], rad_estim_tab[nbre_output_effectif] = ed.pdf_to_singledisc_rad(path=path, num=num)
     numero_output[nbre_output_effectif] = num
     time_cor_tab[nbre_output_effectif] = time_tab[nbre_output_effectif]-time_0
 
@@ -130,6 +132,8 @@ numero_output = numero_output[0:nbre_output_effectif]
 mass_disk_tab = mass_disk_tab[0:nbre_output_effectif]
 log_rho_disk_tab = log_rho_disk_tab[0:nbre_output_effectif]
 mag_mean_broad_tab = mag_mean_broad_tab[0:nbre_output_effectif]
+median_rad_loc_tab = median_rad_loc_tab[0:nbre_output_effectif]
+rad_estim_tab = rad_estim_tab[0:nbre_output_effectif]
 
 
 
@@ -146,6 +150,8 @@ if (save_tab == True and verif==1):
     h5f.create_dataset('mass_disk_tab', data=mass_disk_tab)
     h5f.create_dataset('log_rho_disk_tab', data=log_rho_disk_tab)
     h5f.create_dataset('mag_mean_broad_tab', data=mag_mean_broad_tab)
+    h5f.create_dataset('median_rad_loc_tab', data=median_rad_loc_tab)
+    h5f.create_dataset('rad_estim_tab', data=rad_estim_tab)
 
 
     h5f.close()

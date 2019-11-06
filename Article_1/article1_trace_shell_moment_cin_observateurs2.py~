@@ -23,7 +23,7 @@ if __name__=='__main__':
 #Noms des simulations et caracteristiques du calcul du rayon
 #-----------------------------------------------------------
     #simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_50pourc'
-    tag=''
+    tag='50'
     legend='8,  10*40'
     marker='.'
 
@@ -35,16 +35,16 @@ if __name__=='__main__':
     output_frag = 80  #output au-dela duquel le disque fragmente : algorithme faux, 'None' si fragmente pas
 
     seuil_rho = 1e-10
-    t1 = 0.
+    t1 = 0.08195656682976363
 
     width_bar = 1
 
-    hist=True
+    hist=False
     diff_abs=False
     diff_relat=False
-    moyenne_glissante=False
+    moyenne_glissante=True
 
-    save=True
+    save=False
 
 
 
@@ -103,7 +103,7 @@ def trace_moment_cin_disque(simu,tag,output_min_disque,output_min_global,output_
 #Debut de la figure
 #------------------
     cmappts = plt.get_cmap('magma')
-    colorspts = [cmappts(i) for i in np.linspace(0.1,0.9,7)]
+    colorspts = [cmappts(i) for i in np.linspace(0.1,0.9,6)]
 
 #tab_x = np.linspace(2,102,51) #Utile pour hr2
 #tab_x = np.linspace(output_min,output_max,output_max-output_min+1)
@@ -129,8 +129,8 @@ def trace_moment_cin_disque(simu,tag,output_min_disque,output_min_global,output_
 
 
 
-        plt.bar(numero_output2[0:frag], norm_mom_cin_obs_par_integ2[0:frag], width=width_bar, color=colorspts[1], label=ur'Momentum in the disk', edgecolor='black', linewidth=0.1)
-        plt.bar(numero_output[0:frag], np.abs(norm_mom_cin_obs_par_integ - norm_mom_cin_obs)[0:frag], width=width_bar, color=colorspts[6], label=ur'$\left| \Delta \sigma  \right|$', edgecolor='black', linewidth=0.1)
+        plt.bar(numero_output2[0:frag], norm_mom_cin_obs_par_integ2[0:frag], width=width_bar, color=colorspts[1], label=ur'Momentum in the disk', edgecolor='black', linewidth=0.05)
+        plt.bar(numero_output[0:frag], np.abs(norm_mom_cin_obs_par_integ - norm_mom_cin_obs)[0:frag], width=width_bar, color=colorspts[6], label=ur'$\left| \Delta \sigma  \right|$', edgecolor='black', linewidth=0.05)
         plt.xlabel(ur'Output')
         plt.ylabel(ur"Angular momentum ($kg.m^2.s^{-1}$)")
         plt.legend(loc='best')
@@ -168,27 +168,38 @@ def trace_moment_cin_disque(simu,tag,output_min_disque,output_min_global,output_
 
 
     if moyenne_glissante==True:
+
+        norm_mom_cin_obs_par_integ2=norm_mom_cin_obs_par_integ2[0:frag]
+        norm_mom_cin_obs_par_integ=norm_mom_cin_obs_par_integ[0:frag]
+        norm_mom_cin_obs=norm_mom_cin_obs[0:frag]
+        simulation_time=simulation_time[0:frag]
+
         erreur=(norm_mom_cin_obs_par_integ2-np.abs((norm_mom_cin_obs_par_integ-norm_mom_cin_obs)))/norm_mom_cin_obs_par_integ2
         erreur_moy=np.mean(np.nan_to_num(erreur[np.where(simulation_time-t1>0)]))
-        plt.figure(22)
-        plt.plot(tag, erreur_moy,marker=marker)
-        plt.ylabel(ur"Moyenne de l'ecart entre l'erreur et le moment dans le disque")
+        #plt.figure(22)
+        #plt.plot(tag, erreur_moy,marker=marker)
+        #plt.ylabel(ur"Moyenne de l'ecart entre l'erreur et le moment dans le disque")
+
 
         erreur=np.nan_to_num(erreur[np.where(simulation_time-t1>0)])
         time_pour_liss=np.nan_to_num((simulation_time-t1)[np.where(simulation_time-t1>0)])
-        grp=10
         nbr_pts=len(erreur)/10
+        grp=len(erreur)/nbr_pts
         erreur_lisse=np.zeros(nbr_pts)
         time_lisse=np.zeros(nbr_pts)
         for i in range(nbr_pts):
             erreur_lisse[i]=np.mean(erreur[i*grp:(i+1)*grp])
             time_lisse[i]=np.mean(time_pour_liss[i*grp:(i+1)*grp])
-        plt.figure(23)
-        plt.plot(time_lisse,erreur_lisse, marker=marker, label=legend+'  - '+tag)
-        plt.xlabel(ur'Temps corrigé lissé (Myr)')
-        plt.ylabel(ur"Différence relative entre erreur et moment disque, lissée")
-        plt.legend(loc='upper left')
-        plt.ylim((0,1.3))
+        plt.figure(24)
+        ax=plt.gca()
+        plt.plot(time_lisse*1e3,erreur_lisse, marker=marker, color=colorspts[int(tag)/10-1], label=ur'$\epsilon=$ '+tag+ur'\%')
+        ax.yaxis.set_ticks_position('right')
+        ax.yaxis.set_label_position("right")
+        plt.xlabel(ur'Time (kyr)')
+        plt.ylabel(ur"$\frac{\left| \sigma_{\text{disk}} \right| - \left| \Delta \sigma \right|}{\left| \sigma_{\text{disk}} \right|}$")
+        #plt.legend(loc='lower left')
+        #plt.ylim((0,1.3))
+        plt.xlim((0,9))
 
 
 

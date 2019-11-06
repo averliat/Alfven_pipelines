@@ -39,7 +39,7 @@ if __name__=='__main__':
     V_abs_moy = False
     V_abs_moy_fit = False
 
-    save_fig = True
+    save_fig = False
     save_with_fit = False
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import trace_taille_disque_par_pdf as ttdpp
+import trace_taille_disque_par_pdf_modal as ttdppm
 
 
 
@@ -98,14 +98,12 @@ for i in range(len(tag)):
 '''
 
 
+'''
+tag=['10','50']
+legend=['','']
+marker=['+','.']
 
-tag=['10','20','50','50']
-tag2=['','','','_rot1']
-#tag3=['','_lr','_MHD_lr','_niMHD_lr','_MHD']#,'_rot1']
-legend=['','','','']
-marker=['+','.','x','p']
-
-output_max=[440,400,480,102]
+output_max=[440,480]
 
 t1=[0,0,0,0,0,0,0]
 
@@ -114,8 +112,8 @@ base_simu='B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_'
 
 for i in range(len(tag)):
     i=len(tag)-i-1
-    ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut'+tag2[i],tag[i],tag[i]+tag2[i],'None',output_max[i],t1[i],legend[i],'.')
-
+    ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut',tag[i],'None',output_max[i],t1[i],legend[i],'.')
+'''
 
 
 '''
@@ -133,23 +131,36 @@ base_simu='B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_'
 
 for i in range(len(tag)):
     i=len(tag)-i-1
-    ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut'+tag2[i],tag[i],tag2[i],'None',output_max[i],t1[i],legend[i],'.')
+    ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut'+tag2[i],tag[i],'None',output_max[i],t1[i],legend[i],'.')
 '''
 
-'''
-tag=['50','50','50','50','50']
-tag2=['','_lr','_MHD_lr','_niMHD_lr','_MHD']#,'_rot1']
-legend=['','','','','','']
-marker=['+','.','x','p','P','>']
 
-output_max=[480,68,114,85,742]#,102]
 
-t1=[0,0,0,0,0,0,0]
+cmappts = plt.get_cmap('autumn')
+colorsrot = [cmappts(i) for i in np.linspace(0.05,0.8,4)]
+
+cmappts = plt.get_cmap('summer')
+colorsnorot = [cmappts(i) for i in np.linspace(0.2,0.8,3)]
+
+cmappts = plt.get_cmap(r'cool')
+colorsMHD = [cmappts(i) for i in np.linspace(0.3,0.7,2)]
+
+tag=['50','50','20','20','50','50','50','20','10']
+tag2=['_rot1','_rot0.25','_rot1','_rot0.25','_MHD_lr','_MHD_lr_rot1','','','']
+legend=['','','','','','','','','','']
+marker=['+','.','x','p','P','>','<','.','+','x']
+
+output_max=[30,70,20,40,291,103,480,400,440]
+
+colors=[colorsrot[0],colorsrot[1],colorsrot[2],colorsrot[3],colorsMHD[0],colorsMHD[1],colorsnorot[0],colorsnorot[1],colorsnorot[2]]
+
+output_frag=[24,63,14,30,'None','None',480,400,440]
+
+t1=[0,0,0,0,0,0,0,0,0]
 
 base_simu='B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_'
 
 
 for i in range(len(tag)):
     i=len(tag)-i-1
-    ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut'+tag2[i],tag[i],tag2[i],'None',output_max[i],t1[i],legend[i],'.')
-'''
+    ttdppm.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut'+tag2[i],tag[i],tag[i]+tag2[i],'None',output_max[i],colors[i],t1[i],legend[i],'.',output_frag=output_frag[i])

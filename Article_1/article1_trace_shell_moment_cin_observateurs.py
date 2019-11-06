@@ -74,7 +74,7 @@ def trace_moment_cin_all(simu,tag,output_min,output_max,width_bar,hist,diff_abs,
     path_data = '/drf/projets/alfven-data/averliat/'+simu+'/'
 
     name_save = simu+'_moment_cinetique_analytique_et_reel_output_'+str(output_min)+'_'+str(output_max)+'.pdf'
-    path_save = path_analyses+'Article_1/'+name_save
+    path_save = path_analyses+name_save
     path_save_plusieurs = '/home/averliat/these/analyses/article1_figures/'
 
 
@@ -273,11 +273,11 @@ def trace_moment_cin_all(simu,tag,output_min,output_max,width_bar,hist,diff_abs,
 
 
 
-        if save==True:
+        #if save==True:
             #plt.savefig(path_save, bbox_inches='tight',dpi=300)
             #plt.tight_layout() #pad en inch si besoin
             #plt.savefig(path_save,dpi=300)
-            plt.savefig(path_save)
+        #    plt.savefig(path_save)
 
 
 

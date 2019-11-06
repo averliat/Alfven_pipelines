@@ -31,7 +31,7 @@ plt.style.use("aanda_modif")
 #-------------------------------------------------------
 #Entree le nom de la simulation et le numero de l'output
 #-------------------------------------------------------
-simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_50pourc'
+simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_0pourc'
 
 owner = 'averliat_alfven'
 num_output = 1

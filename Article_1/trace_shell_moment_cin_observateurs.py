@@ -35,9 +35,11 @@ if __name__=='__main__':
     diff_relat=True
     moyenne_glissante=True
 
+    savefig=False
 
 
-def trace_moment_cin_all(simu,tag,output_min,output_max,width_bar,hist,diff_abs,diff_relat,legend,marker,t1=0.,moyenne_glissante=True):
+
+def trace_moment_cin_all(simu,tag,output_min,output_max,width_bar,hist,diff_abs,diff_relat,legend,marker,t1=0.,moyenne_glissante=True,savefig=False):
 #------------------
 #Differents chemins
 #------------------
@@ -69,7 +71,7 @@ def trace_moment_cin_all(simu,tag,output_min,output_max,width_bar,hist,diff_abs,
 #Debut de la figure
 #------------------
     cmappts = plt.get_cmap('magma')
-    colorspts = [cmappts(i) for i in np.linspace(0.1,0.9,7)]
+    colorspts = [cmappts(i) for i in np.linspace(0.1,0.9,6)]
 
 
     '''
@@ -129,9 +131,9 @@ def trace_moment_cin_all(simu,tag,output_min,output_max,width_bar,hist,diff_abs,
 
     erreur=np.abs((norm_mom_cin_obs_par_integ-norm_mom_cin_obs)/norm_mom_cin_obs_par_integ)
     erreur_moy=np.mean(np.nan_to_num(erreur[np.where(simulation_time-t1>0)]))
-    plt.figure(12)
-    plt.plot(tag, erreur_moy,marker=marker)
-    plt.ylabel(ur"Moyenne de l'erreur")
+    #plt.figure(12)
+    #plt.plot(tag, erreur_moy,marker=marker)
+    #plt.ylabel(ur"Moyenne de l'erreur")
 
 
 
@@ -139,19 +141,24 @@ def trace_moment_cin_all(simu,tag,output_min,output_max,width_bar,hist,diff_abs,
     if moyenne_glissante==True:
         erreur=np.nan_to_num(erreur[np.where(simulation_time-t1>0)])
         time_pour_liss=np.nan_to_num((simulation_time-t1)[np.where(simulation_time-t1>0)])
-        grp=10
         nbr_pts=len(erreur)/10
+        grp=len(erreur)/nbr_pts
         erreur_lisse=np.zeros(nbr_pts)
         time_lisse=np.zeros(nbr_pts)
         for i in range(nbr_pts):
             erreur_lisse[i]=np.mean(erreur[i*grp:(i+1)*grp])
             time_lisse[i]=np.mean(time_pour_liss[i*grp:(i+1)*grp])
         plt.figure(13)
-        plt.plot(time_lisse,erreur_lisse, marker=marker, label=legend+'  - '+tag)
-        plt.xlabel(ur'Temps corrigé lissé (Myr)')
-        plt.ylabel(ur"Différence relative lissée")
+        plt.plot(time_lisse*1e3,erreur_lisse, marker=marker,color=colorspts[int(tag)/10-1], label=ur'$\varepsilon=$ '+tag+ur'\%')
+        plt.xlabel(ur'Time (kyr)')
+        plt.ylabel(ur"$\left| \frac{\Delta \sigma}{\sigma} \right|$")
         plt.legend(loc='upper left')
-        plt.ylim((0,1.3))
+        plt.xlim((0,9))
+        plt.ylim((0,0.15))
+
+        if savefig==True:
+            plt.tight_layout(pad=0.1) #pad en inch si besoin
+            plt.savefig(path_analyses+file_save+'.pdf')#, bbox_inches='tight')
 
 
 

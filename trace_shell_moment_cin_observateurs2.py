@@ -20,7 +20,7 @@ if __name__=='__main__':
 #Noms des simulations et caracteristiques du calcul du rayon
 #-----------------------------------------------------------
     #simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_50pourc'
-    tag='50pourc'
+    tag='20pourc'
     legend='8,  10*40'
     marker='.'
 
@@ -28,7 +28,7 @@ if __name__=='__main__':
 
     output_min_disque = 'None'
     output_min_global = 1
-    output_max = 110
+    output_max = 93
 
     seuil_rho = 1e-10
 

@@ -10,9 +10,12 @@ from pymses.filters import CellsToPoints
 from pymses.utils import constants as cst
 import matplotlib.pyplot as plt
 plt.ion() #Mis 2 lignes plus bas
+import matplotlib.patches as mpatches
 
 import h5py
 
+plt.style.use("pdf")
+plt.style.use("aanda_modif")
 
 #Remise a zero des parametres de matplotlib car ils sont modifies par pipeline_taille_disque_par_pdf.py ! Inutile si on quitte ipython entre les 2...
 #plt.rcParams.update(plt.rcParamsDefault)
@@ -22,18 +25,18 @@ if __name__ == '__main__':
 #-----------------------------------------------------------
 #Noms des simulations et caracteristiques du calcul du rayon
 #-----------------------------------------------------------
-    simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_lr'
+    simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_10pourc_sink_seuil_haut'
     tag = '50_shr_bigbox'
 
     output_min = 'None'
-    output_max = 68
+    output_max = 440
 
     seuil_rho = 1e-10
 
 
 
 
-def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',marker='.',seuil_rho=1e-10):
+def trace_taille_disque(simu,tag,output_min,output_max,t1=0.,legend='',marker='.',seuil_rho=1e-10,ind=0,tagtot=1):
 #------------------
 #Differents chemins
 #------------------
@@ -87,8 +90,10 @@ def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',mark
 #------------------
 #Debut de la figure
 #------------------
-#cmappts = plt.get_cmap('magma')
-#colorspts = [cmappts(i) for i in np.linspace(0.1,0.9,7)]
+    cmappts = plt.get_cmap('plasma')
+    #colorspts = [cmappts(i) for i in np.linspace(0.1,0.9,7)]
+    #colorspts = [cmappts(i) for i in np.linspace(0.1,0.82,tagtot)]#0.1-0.82 pour 4 simus
+    colorspts = [cmappts(i) for i in np.linspace(0,1,tagtot)]#0.1-0.82 pour 4 simus
 
     '''
     plt.figure(1)
@@ -108,12 +113,74 @@ def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',mark
     plt.xlabel(ur'Temps ($Myr$)')
     plt.ylabel(ur'Rayon moyen du disque ($AU$)')
     plt.legend(loc='best')
-    '''
+    
+
     plt.figure(4)
-    plt.plot(time_cor_tab,mean_rad_loc_tab, marker='.', label=tag2)
-    plt.xlabel(ur'Temps corrigé ($Myr$)')
-    plt.ylabel(ur'Rayon moyen du disque ($AU$)')
+    plt.plot(time_cor_tab*1e3,mean_rad_loc_tab, marker='.', label=tag,color=colorspts[ind])
+    plt.plot(time_cor_tab*1e3,max_rad_loc_tab, marker='.', linestyle='dashed',label=tag,color=colorspts[ind])
+    plt.plot(time_cor_tab*1e3,min_rad_loc_tab, marker='.', linestyle='dotted',label=tag,color=colorspts[ind])
+    plt.xlabel(ur'Time (kyr)')
+    plt.ylabel(ur'Disk radius (AU)')
     plt.legend(loc='best')
+    '''
+
+
+
+
+    plt.figure(5)
+    ax=plt.gca()
+
+    nbr_pts=len(mean_rad_loc_tab)/20
+    grp=len(mean_rad_loc_tab)/nbr_pts
+
+    mean_rad_loc_tab_lisse=np.zeros(nbr_pts)
+    max_rad_loc_tab_lisse=np.zeros(nbr_pts)
+    min_rad_loc_tab_lisse=np.zeros(nbr_pts)
+    time_cor_tab_lisse=np.zeros(nbr_pts)
+    for i in range(nbr_pts):
+        mean_rad_loc_tab_lisse[i]=np.mean(mean_rad_loc_tab[i*grp:(i+1)*grp])
+        max_rad_loc_tab_lisse[i]=np.mean(max_rad_loc_tab[i*grp:(i+1)*grp])
+        min_rad_loc_tab_lisse[i]=np.mean(min_rad_loc_tab[i*grp:(i+1)*grp])
+        time_cor_tab_lisse[i]=np.mean(time_cor_tab[i*grp:(i+1)*grp])
+
+
+
+    ax.plot(time_cor_tab_lisse*1e3,mean_rad_loc_tab_lisse, label=tag,color=colorspts[ind])
+    #ax.plot(time_cor_tab_lisse*1e3,max_rad_loc_tab_lisse, linestyle='dashed',color=colorspts[ind])
+    #ax.plot(time_cor_tab_lisse*1e3,min_rad_loc_tab_lisse, linestyle='dotted',color=colorspts[ind])
+
+    if ind==tagtot-1:
+        #Get artists and labels for legend and chose which ones to display
+        handles, labels = ax.get_legend_handles_labels()
+        display = range(0,tagtot)#(0,1,2,3)
+
+        #Create custom artists
+        meanArtist = plt.Line2D((0,1),(0,0), color='dimgrey', linestyle='solid')
+        maxArtist = plt.Line2D((0,1),(0,0), color='dimgrey',linestyle='dashed')
+        minArtist = plt.Line2D((0,1),(0,0), color='dimgrey',linestyle='dotted')
+
+        #Create custom artists for colors
+        handles=[]
+        for j in range(tagtot):
+            handles.append(mpatches.Patch(color=colorspts[j]))#, label='The red data')
+
+
+        plt.xlabel(ur'Time (kyr)')
+        plt.ylabel(ur'Disk radius (AU)')
+        plt.legend(loc='best')
+
+
+        #Create legend from custom artist/label lists
+        color_legend=ax.legend([handle for i,handle in enumerate(handles) if i in display],
+                [label for i,label in enumerate(labels) if i in display],loc='upper left')#,ncol=2)
+
+        ax.add_artist(color_legend)
+
+        ax.legend([meanArtist,maxArtist,minArtist],
+                [ur'$R_{\text{mean}}$',ur'$R_{\text{max}}$',ur'$R_{\text{min}}$'],loc='upper right')
+
+
+
 
     '''
     plt.figure()
@@ -145,7 +212,7 @@ def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',mark
 
 
 if __name__ == '__main__':
-    trace_taille_disque(simu,tag,tag,output_min,output_max)
+    trace_taille_disque(simu,tag,output_min,output_max)
 
 
 

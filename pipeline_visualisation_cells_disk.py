@@ -1,4 +1,5 @@
 import numpy as np
+import extract_disk as ed
 
 import pymses
 import sys
@@ -21,39 +22,28 @@ from matplotlib.colors import Normalize
 import os
 import pipeline_temps_0_simulation as t_0
 
-print('dbg:import begin')
-
 plt.style.use("pdf")
 plt.style.use("aanda_modif")
-
-
-#params = {'backend': 'wxAgg', 'lines.markersize' : 3, 'axes.labelsize': axislabel_size, 'font.size': fontlabel_size, 'legend.fontsize': fontlabel_size, 'xtick.labelsize': tick_size, 'ytick.labelsize': tick_size, 'axes.linewidth' : 3}
-#params = {'font.family': sans-serif, 'font.sans-serif': DejaVu Sans, 'axes.titlesize': 12, 'axes.labelsize': 12, 'font.size': 12, 'legend.fontsize': 12, 'xtick.labelsize': 12, 'ytick.labelsize': 12}
-
-##size_lab = 12
-##params = {'axes.titlesize': size_lab, 'axes.labelsize': size_lab, 'font.size': size_lab, 'figure.titlesize':size_lab, 'legend.fontsize': size_lab, 'xtick.labelsize': size_lab, 'ytick.labelsize': size_lab}
-##plt.rcParams.update(params)
-#rc('font',**{'family':'serif','serif':['txfonts']})
-#rc('text', usetex=True)
-print('dbg:import ok')
 
 
 #-------------------------------------------------------
 #Entree le nom de la simulation et le numero de l'output
 #-------------------------------------------------------
-simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_MHD_lr'#shr_bigbox_50pourc'
+simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_MHD_lr'
 
 owner = 'averliat_alfven'
-num_output = 152
+num_output = 114
 
+#-------------------------------------------------------
+#-------------------------------------------------------
 save = True
-dir_save = 'Article_1'#'Coupe_vitesse_integree'
+dir_save = 'Masque_identification_disque'
 
-radius_zoom = 8
+radius_zoom = 3
 
-v_proj = True
+v_proj = False
 
-title_time=True
+title_time=False
 title_time_cor=True
 seuil_rho = 1e-10
 
@@ -73,21 +63,8 @@ edge_on=True
 #=========================================
 #Pour recherche du edge-on : mettre view='edge-on' et changer les coord ci-dessous
 #Ensuite faire la figure face-on
-if num_output==59:
-    view_diagram_edgeon=np.array([1,0,2]) #edge-on
-    up_vector_edgeon=np.array([0,-0.15,1]) #edge-on
-elif num_output==38:
-    view_diagram_edgeon=np.array([1.3,0,2]) #edge-on
-    up_vector_edgeon=np.array([0,-0.07,1]) #edge-on
-elif num_output==22:
-    view_diagram_edgeon=np.array([1.5,0,2]) #edge-on
-    up_vector_edgeon=np.array([0,-0.04,1]) #edge-on
-else:
-    #view_diagram_edgeon=np.array([0,0,1]) #edge-on
-    #up_vector_edgeon=np.array([0,1,0]) #edge-on
-    view_diagram_edgeon=np.array([1,0,0]) #edge-on
-    up_vector_edgeon=np.array([0,0,1]) #edge-on
-
+view_diagram_edgeon=np.array([0,1,0]) #edge-on
+up_vector_edgeon=np.array([1,0,0]) #edge-on
 
 norm_view_diagram_edgeon_2=np.sum(view_diagram_edgeon**2)
 view_diagram_faceon=up_vector_edgeon-np.sum(up_vector_edgeon*view_diagram_edgeon)*view_diagram_edgeon/norm_view_diagram_edgeon_2
@@ -95,9 +72,6 @@ up_vector_faceon=view_diagram_edgeon
 
 #vd(output59)=[1,0,2]
 #uv(output59)=[0,-0.15,1]
-
-#vd(output38)=[1.3,0,2]
-#uv(output38)=[0,-0.07,1]
 
 #vd(output22)=[1.5,0,2]
 #uv(output22)=[0,-0.04,1]
@@ -147,7 +121,16 @@ if save==True:
         os.mkdir(path_save)
 
 
-print('dbg:debut lecture')
+
+#--------------------
+#Definition du masque
+#--------------------
+#mask_rho_disk, mask = ed.pdf_to_singledisc_cells(path=path, num=num_output)
+#mask_tot=np.copy(mask_rho_disk)
+#mask_tot[mask_tot]=mask
+rho_min_disk, pos_max_x, pos_max_y, pos_max_z, vel_max_x, vel_max_y, vel_max_z=ed.pdf_to_singledisc_for_plot(path=path, num=num_output)
+
+
 
 #-------------------
 #Lecture de l'output
@@ -163,8 +146,7 @@ cells = cell_source.flatten()
 pos = cells.points
 rho = cells["rho"]
 
-
-print('dbg:lecture ok')
+rho_max_codeunits=np.max(rho)
 
 #------------------------------------------------------------
 #Facteur de conversion des unites de code en unites physiques
@@ -219,7 +201,7 @@ zoom_v=[0.045, 0.015, 0.005, 0.005/3., 0.5]
 
 
 if 'bigbox' or 'jet' in simu:
-    zoom_v=[0.045/2, 0.015/2, 0.005/2, 0.005/3./2, 0.5, 0.5/2, 0.005/2/1.5, 0.005/2/1.2]
+    zoom_v=[0.045/2, 0.015/2, 0.005/2, 0.005/3./2, 0.5, 0.5/2, 0.005/2/1.5]
     if radius_zoom==6:
         center = [0.5,0.5,0.5]
 
@@ -308,122 +290,82 @@ class MidpointNormalize(Normalize):
 
 
 
+#-------------------------------------------
+#-------------------------------------------
+#Fonction qui calcul le radio entre Vrad et 
+#Vpar comme dans "pdf_to_singledisc_cells" 
+#de extract_disk.py
+#-------------------------------------------
+#-------------------------------------------
+def compute_vel_ratio(pos_max_x,pos_max_y,pos_max_z,vel_max_x,vel_max_y,vel_max_z,pos,vel):
+    #position of disk cell
+    pos_disk_x = pos[:,0] - pos_max_x
+    pos_disk_y = pos[:,1] - pos_max_y
+    pos_disk_z = pos[:,2] - pos_max_z
+
+    #position of disk cell
+    vel_disk_x = vel[:,0] - vel_max_x
+    vel_disk_y = vel[:,1] - vel_max_y
+    vel_disk_z = vel[:,2] - vel_max_z
+
+    #radial component of V
+    norm_pos = np.sqrt(pos_disk_x**2+pos_disk_y**2+pos_disk_z**2)
+    mask = norm_pos == 0.
+    norm_pos[mask] = 1.e-10
+    Vrad = (vel_disk_x*pos_disk_x + vel_disk_y*pos_disk_y + vel_disk_z*pos_disk_z) / norm_pos
+
+    #non radial component of V
+    Vpar_x = (vel_disk_z*pos_disk_y - vel_disk_y*pos_disk_z) / norm_pos
+    Vpar_y = (vel_disk_x*pos_disk_z - vel_disk_z*pos_disk_x) / norm_pos
+    Vpar_z = (vel_disk_y*pos_disk_x - vel_disk_x*pos_disk_y) / norm_pos
+    Vpar = np.sqrt(Vpar_x**2+Vpar_y**2+Vpar_z**2)
+    Vpar[mask] = 1.e-10
+
+    #Ratio
+    vrad_orth_ratio = -Vrad / Vpar
+
+    return vrad_orth_ratio
+
+
+
+#-------------------------------------------
+#Definition de la fonction (densite masquee)
+#-------------------------------------------
+def disk_op(dset):
+    rho = dset["rho"]
+    vel = dset["vel"]
+    pos = dset.get_cell_centers()
+    flag = np.zeros_like(rho)
+    mask = rho > rho_min_disk
+    vrad_orth_ratio = compute_vel_ratio(pos_max_x,pos_max_y,pos_max_z,vel_max_x,vel_max_y,vel_max_z,pos[mask],vel[mask])
+    #mask *= vrad_orth_ratio < 0.5
+    mask2 = vrad_orth_ratio < 0.5
+    mask[mask]=mask2
+    flag[mask] = 1.0
+    flag[~mask] = 0.0 
+    return flag
+#-------------------------------------------
+#-------------------------------------------
+
+
+
 #-----------------
 #-----------------
 #Calcul des cartes
 #-----------------
 #-----------------
-
-if selon_x==True:
-    #--------------------------------------------
-    #Calcul de la carte ou l'on regarde suivant x
-    #--------------------------------------------
-    cam_x = Camera(center=center,line_of_sight_axis='x',region_size=[2.*radius,2.*radius],distance=radius,far_cut_depth=radius,up_vector='z',map_max_size=512)
-
-    rho_op = ScalarOperator(lambda dset: dset["rho"] ,  ro.info["unit_density"])
-    rt = raytracing.RayTracer(amr,ro.info,rho_op)
-    datamap = rt.process(cam_x, surf_qty=True)
-    map_col = np.log10(datamap.map.T*lbox_cm)
-
-    if v_proj == True:
-        Vx_op = ScalarOperator(lambda dset: dset["vel"][...,0]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vx_op)
-        datamap_vx = rt.process(cam_x, surf_qty=True)
-        map_Vx = datamap_vx.map.T / datamap.map.T * factor_vel_km_s
-
-
-    #Debut figure coldens
-    plt.figure()
-    ax=plt.gca()
-    im1=plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)#,cmap='plasma')   
-    ax.yaxis.set_ticks_position('right')
-    ax.yaxis.set_label_position("right")
-    plt.locator_params(axis='x', nbins=7)
-    #ax1.yaxis.set_ticklabels([])
-
-    if sink_plot==True:
-        for i in range(len(m_sinks)):
-            if (y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au)&(z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au):
-                plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_colmap,markersize=size_sinks[i],alpha=transparence_sink_colmap)
-    ax.set_xlabel(r'$y$ (AU)')     
-    ax.set_ylabel(r'$z$ (AU)')
-    plt.xticks(rotation=90)
-
-    #if title_time==True:
-        #plt.title('Time = '+str(int(simulation_time))+' years')
-    if title_time_cor==True:
-        plt.tight_layout(pad=0.1) #pad en inch si besoin
-        plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years')
-
-    # Adding the colorbar
-    divider1 = make_axes_locatable(ax)
-    cax = divider1.append_axes("left", size="6%", pad=0.15)
-    #cax,kw = mpl.colorbar.make_axes([ax],location='left')
-    cbar1 = plt.colorbar(im1, cax=cax)#, **kw)
-    cbar1.ax.yaxis.set_ticks_position('left')
-    cbar1.ax.yaxis.set_label_position('left')
-
-    cbar1.set_label(r'$\text{log} \left( N \right) \, \, \left( cm^{-2} \right)$')
-    if radius_zoom==5:
-        plt.xlim([0,lbox_au])
-        plt.ylim([0,lbox_au])
-    if save==True:
-        plt.tight_layout(pad=0.1) #pad en inch si besoin
-        plt.savefig(path_save+simu+'_dens_x_'+str(radius_zoom)+'_'+str(num_output)+'.pdf')#, bbox_inches='tight')
-
-
-    if v_proj == True:
-        plt.figure()
-        plt.xticks(rotation=90)
-        plt.locator_params(axis='x', nbins=7)
-        ax=plt.gca()
-        norm = MidpointNormalize(midpoint=0)  #Pour avoir le centre de la colormap a 0
-        im2=plt.imshow(-map_Vx,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
-        #ax.yaxis.set_ticks_position('left')
-        #ax.yaxis.set_ticklabels([])
-        #ax2.yaxis.set_ticklabels(horizontalalignment = "left")
-        #ax2.yaxis.tick_right()
-        if sink_plot==True:
-            for i in range(len(m_sinks)):
-                if (y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au)&(z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au):
-                    plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_velmap,markersize=size_sinks[i],alpha=transparence_sink_velmap)
-        plt.xlabel(r'$y$ (AU)')     
-        plt.ylabel(r'$z$ (AU)')
-        
-        #if title_time==True:
-            #plt.title('Time = '+str(int(simulation_time))+' years')
-        if title_time_cor==True:
-            plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years')
-
-        divider2 = make_axes_locatable(ax)
-        cax = divider2.append_axes("right", size="6%", pad=0.15)
-        #cax,kw = mpl.colorbar.make_axes([ax],location='right')
-        cbar2 = plt.colorbar(im2, cax=cax)#, **kw)
-
-        cbar2.set_label(r'$v_x \, \left( km.s^{-1} \right) $')  
-        if radius_zoom==5:
-            plt.xlim([0,lbox_au])
-            plt.ylim([0,lbox_au])
-        if save==True: 
-            plt.tight_layout(pad=0.1) #pad en inch si besoin
-            plt.savefig(path_save+simu+'_vel_x_'+str(radius_zoom)+'_'+str(num_output)+'.pdf')#, bbox_inches='tight')
-        #f.subplots_adjust(wspace=0.3)
-        #plt.setp([a.get_xticklabels() for a in f.axes[:-1]], visible=False)
-
-
-
-
-#if (selon_coord==True and view!='both'):
 def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag_compl):
     #-----------------------------------------------------------
     #Calcul de la carte ou l'on regarde suivant un vecteur donne
     #-----------------------------------------------------------
     cam_x = Camera(center=center,line_of_sight_axis=view_diagram,region_size=[2.*radius,2.*radius],distance=radius,far_cut_depth=radius,up_vector=up_vector,map_max_size=512)
 
-    rho_op = ScalarOperator(lambda dset: dset["rho"] ,  ro.info["unit_density"])
+    #rho_op = ScalarOperator(lambda dset: dset["rho"] ,  ro.info["unit_density"])
+    rho_op=ScalarOperator(disk_op, ro.info["unit_density"])
     rt = raytracing.RayTracer(amr,ro.info,rho_op)
-    datamap = rt.process(cam_x, surf_qty=True)
-    map_col = np.log10(datamap.map.T*lbox_cm)
+    datamap = rt.process(cam_x)#, surf_qty=True)
+    #map_col = np.log10(datamap.map.T*lbox_cm)
+    map_col = datamap.map.T
 
     if v_proj == True:
         Vx_op = ScalarOperator(lambda dset:  (  (dset["vel"][...,0]*np.array(view_diagram)[0]) + (dset["vel"][...,1]*np.array(view_diagram)[1]) + (dset["vel"][...,2]*np.array(view_diagram)[2]) )   /np.sqrt(np.sum(np.array(view_diagram)**2))  *dset["rho"] ,  ro.info["unit_velocity"])
@@ -437,7 +379,7 @@ def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag
     #--------------------
     plt.figure()
     ax=plt.gca()
-    im1=plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)#,cmap='plasma')   
+    im1=plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)   
     if pos_colorbar_dens=='left':
         ax.yaxis.set_ticks_position('right')
         ax.yaxis.set_label_position("right")
@@ -446,12 +388,8 @@ def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag
         for i in range(len(m_sinks)):
             if (y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au)&(z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au):
                 plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_colmap,markersize=size_sinks[i],alpha=transparence_sink_colmap)
-    if tag_compl=='edgeon_':
-        ax.set_xlabel(r'$x_d$ (AU)')     
-        ax.set_ylabel(r'$z_d$ (AU)')
-    if tag_compl=='faceon_':
-        ax.set_xlabel(r'$x_d$ (AU)')     
-        ax.set_ylabel(r'$y_d$ (AU)')
+    ax.set_xlabel(r'$y$ (AU)')     
+    ax.set_ylabel(r'$z$ (AU)')
     plt.xticks(rotation=90)
     plt.locator_params(axis='x', nbins=7)
 
@@ -478,7 +416,7 @@ def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag
         plt.ylim([0,lbox_au])
     if save==True:
         plt.tight_layout(pad=0.1) #pad en inch si besoin
-        plt.savefig(path_save+simu+'_dens_'+tag_compl+str(radius_zoom)+'_'+str(num_output)+'.pdf')#, bbox_inches='tight')
+        plt.savefig(path_save+simu+'_maskdisk_'+tag_compl+str(radius_zoom)+'_'+str(num_output)+'.pdf')#, bbox_inches='tight')
 
 
 
@@ -495,7 +433,7 @@ def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag
         plt.locator_params(axis='x', nbins=7)
         ax=plt.gca()
         norm = MidpointNormalize(midpoint=0)  #Pour avoir le centre de la colormap a 0
-        im2=plt.imshow(-map_Vx,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
+        im2=plt.imshow(map_Vx,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
         if pos_colorbar_vel=='left':
             ax.yaxis.set_ticks_position('right')
             ax.yaxis.set_label_position("right")
@@ -504,12 +442,8 @@ def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag
             for i in range(len(m_sinks)):
                 if (y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au)&(z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au):
                     plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_velmap,markersize=size_sinks[i],alpha=transparence_sink_velmap)
-        if tag_compl=='edgeon_':
-            plt.xlabel(r'$x_d$ (AU)')     
-            plt.ylabel(r'$z_d$ (AU)')
-        if tag_compl=='faceon_':
-            plt.xlabel(r'$x_d$ (AU)')     
-            plt.ylabel(r'$y_d$ (AU)')
+        plt.xlabel(r'$y$ (AU)')     
+        plt.ylabel(r'$z$ (AU)')
         
         #if title_time==True:
             #plt.title('Time = '+str(int(simulation_time))+' years')

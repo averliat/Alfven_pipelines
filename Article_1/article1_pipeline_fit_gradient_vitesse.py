@@ -21,20 +21,23 @@ import pipeline_temps_0_simulation as t_0
 import scipy.optimize as opt
 
 
+plt.style.use("pdf")
+plt.style.use("aanda_modif")
+
 
 
 #-------------------------------------------------------
 #Entree le nom de la simulation et le numero de l'output
 #-------------------------------------------------------
-simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_rot0.25'
+simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_50pourc'
 
 owner = 'averliat_alfven'
-num_output = 36
+num_output = 59
 
 
-dir_save = 'Gradient_vitesse'  #Repertoire de sauvegarde des figures
+dir_save = 'Gradient_vitesse_article1'  #Repertoire de sauvegarde des figures
 
-save_ang = True  #Pour sauvegarder les tableaux contenant les angles des gradients
+save_ang = False #Pour sauvegarder les tableaux contenant les angles des gradients
 
 
 #Caracteristiques des coquilles en AU:
@@ -43,28 +46,28 @@ R_max = 10000  #='all' pour prendre toute la boite
 dr = 50
 
 
-file_save_ang = 'Angle_omega_J_gradient_vitesse_log_output'+str(num_output)+'_Rmin'+str(R_min)+'_Rmax'+str(R_max)+'_dr'+str(dr)+'.hdf5'
+file_save_ang = 'Angle_omega_J_gradient_vitesse_test_log_output'+str(num_output)+'_Rmin'+str(R_min)+'_Rmax'+str(R_max)+'_dr'+str(dr)+'.hdf5'
 #file_save_ang = 'Angle_gradient_vitesse_output'+str(num_output)+'comparaison_mathilde.hdf5'
 
 
-title_time=True
-title_time_cor=False
+title_time=False
+title_time_cor=True
 seuil_rho = 1e-10
 
 
 selon_x = True
-selon_y = True
-selon_z = True
+selon_y = False
+selon_z = False
 
 
-fig_coldens = False  #Pour afficher et sauvegarder les images de densite colonne
-save_coldens = False
+fig_coldens = True   #Pour afficher et sauvegarder les images de densite colonne
+save_coldens = True
 
-fig_vel = False  #Pour afficher et sauvegarder les images de vitesses projetees
-save_vel = False
+fig_vel = True   #Pour afficher et sauvegarder les images de vitesses projetees
+save_vel = True
 
-verif_fit = False  #Pour verifier si le fit du gradient de vitesse est juste
-save_fit = False
+verif_fit = True   #Pour verifier si le fit du gradient de vitesse est juste
+save_fit = True
 
 
 
@@ -177,9 +180,9 @@ nbr_shell = int((R_max-R_min)/dr)  #nombre de coquilles
 #shells_au=np.linspace(R_min,R_max,nbr_shell)  #rayon des coquilles en AU
 shells_au=np.logspace(np.log10(R_min),np.log10(R_max),nbr_shell)  #rayon des coquilles en AU
 shells=shells_au/lbox_au  #rayon des coquilles en unite de code (correspondant au zoom_v ci-dessous)
-#nbr_shell = 5
-#shells_au=np.array([50.,300.,800.,2000.,6000.])
-#shells=shells_au/lbox_au
+nbr_shell = 5
+shells_au=np.array([50.,300.,800.,2000.,6000.])
+shells=shells_au/lbox_au
 
 
 #zoom_v=[0.045, 0.015, 0.005, 0.005/3., lbox_pc*4]
@@ -337,16 +340,18 @@ def fit_gradient_vel((map_V,extent), tag, radius=0, verif_fit=verif_fit, save_fi
         #Trace de la carte du gradient de vitesse ajuste pour verification
         if verif_fit==True:
             plt.figure()
+            plt.xticks(rotation=90)
+            plt.locator_params(axis='x', nbins=7)
             plt.imshow(vel,extent=extent,origin='lower',cmap='RdBu_r')
             if vel_droite > vel_gauche:
                 plt.arrow(x_fleche[mask_fleche][0],y_fleche[mask_fleche][0],x_fleche[mask_fleche][-1]-x_fleche[mask_fleche][0],y_fleche[mask_fleche][-1]-y_fleche[mask_fleche][0],head_width=10*radius*lbox_au/172., head_length=10*radius*lbox_au/172.,linestyle="-",linewidth=1.1,color='g',length_includes_head=True,joinstyle='round',overhang=0.7)
             elif vel_droite < vel_gauche:
                 plt.arrow(x_fleche[mask_fleche][-1],y_fleche[mask_fleche][-1],x_fleche[mask_fleche][0]-x_fleche[mask_fleche][-1],y_fleche[mask_fleche][0]-y_fleche[mask_fleche][-1],head_width=10*radius*lbox_au/172., head_length=10*radius*lbox_au/172.,linestyle="-",linewidth=1.1,color='g',length_includes_head=True,joinstyle='round',overhang=0.7)
 
-            plt.xlabel('(AU)')
-            plt.ylabel('(AU)')
+            plt.xlabel(r'$y$ (AU)')
+            plt.ylabel(r'$z$ (AU)')
             cbar = plt.colorbar()
-            cbar.set_label(r'$v \, (km.s^{-1})$')
+            cbar.set_label(r'$v_x \, (km.s^{-1})$')
             if title_time==True:
                 plt.title('Time = '+str(int(simulation_time))+' years')
             if title_time_cor==True:
@@ -412,7 +417,8 @@ for radius in shells:
             if title_time==True:
                 plt.title('Time = '+str(int(simulation_time))+' years')
             if title_time_cor==True:
-                plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
+                #plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
+                plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years')
             if save_coldens==True:
                 plt.savefig(path_save+'dens_x_'+str(int(shells_au[ind]))+'_'+str(num_output)+'.pdf', bbox_inches='tight')
 
@@ -428,6 +434,8 @@ for radius in shells:
 
         if fig_vel==True:
             plt.figure()
+            plt.xticks(rotation=90)
+            plt.locator_params(axis='x', nbins=7)
             norm = MidpointNormalize(midpoint=0)  #Pour avoir le centre de la colormap a 0
             mask=np.zeros((len(map_Vx),)*2)
             for i in range(len(map_Vx)):
@@ -439,14 +447,15 @@ for radius in shells:
             r=map_Vx*mask
             vmin_vel=coef_vel*np.median(r[np.where(r<0)])
             plt.imshow(map_Vx,extent=extent,origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
-            plt.xlabel('$y$ (AU)')
-            plt.ylabel('$z$ (AU)')
+            plt.xlabel(r'$y$ (AU)')
+            plt.ylabel(r'$z$ (AU)')
             cbar = plt.colorbar()
             cbar.set_label(r'$v_x \, (km.s^{-1})$')
             if title_time==True:
                 plt.title('Time = '+str(int(simulation_time))+' years')
             if title_time_cor==True:
-                plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
+                #plt.title('Time = '+str(int(simulation_time))+' years \n Corrected time = '+str(int(simulation_time - ref[1]*1e6))+' years')
+                plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years')
 
 
         #Fit du gradient de vitesse

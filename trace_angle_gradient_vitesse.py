@@ -18,14 +18,14 @@ import h5py
 if __name__=='__main__':
 #-----------------------------------------------------------
 #Noms des simulations et caracteristiques du calcul du rayon
-#-----------------------------------------------------------
-    tag='_shr_bigbox_20pourc'
+#----------------------------------------------------------
+    tag='_bigbox_20pourc_sink_seuil_haut_rot0.25'#'_shr_bigbox_50pourc'
     legend='8,  10*40'  #Inutile pour le moment
     marker='.'
 
     simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire'+tag
 
-    output = 40
+    output = 35
 
     R_min = 50
     R_max = 10000
@@ -38,10 +38,13 @@ if __name__=='__main__':
 
     save_fig = False
 
+    reposition_fig = True
+
 
 
 
 def trace_angle_gradient_vitesse(simu,tag,output,R_min,R_max,dr,legend,marker,ang_absolu,ang_relat,omega,moment_spec,save_fig):
+    omega_fit=False
 #------------------
 #Differents chemins
 #------------------
@@ -226,8 +229,9 @@ def trace_angle_gradient_vitesse(simu,tag,output,R_min,R_max,dr,legend,marker,an
     #------------------------------------------------------------------------
     y=-1.8*np.log10(shells_au)+6.8
 
-    plt.figure(3)
-    plt.loglog(shells_au,10**y,color='g')
+    if omega_fit==True:
+        plt.figure(3)
+        plt.loglog(shells_au,10**y,color='g')
     #------------------------------------------------------------------------
 
 
@@ -239,3 +243,19 @@ def trace_angle_gradient_vitesse(simu,tag,output,R_min,R_max,dr,legend,marker,an
 if __name__=='__main__':
     trace_angle_gradient_vitesse(simu,tag,output,R_min,R_max,dr,legend,marker,ang_absolu,ang_relat,omega,moment_spec,save_fig)
 
+    if reposition_fig==True:
+        for i in range(2):
+            i *= 2
+            for j in range(2):
+                plt.figure(i+j+1)
+                mngr = plt.get_current_fig_manager()
+                geom = mngr.window.geometry()
+                x,y,dx,dy = geom.getRect()
+                mngr.window.setGeometry(1920/3*(i/2),1080/2*j,dx,dy)
+
+        plt.figure(1)  #Oblige sinon figure 1 mal placee...
+        mngr = plt.get_current_fig_manager()
+        geom = mngr.window.geometry()
+        x,y,dx,dy = geom.getRect()
+        #mngr.window.setGeometry(65,52,dx,dy)
+        mngr.window.setGeometry(1,1,dx,dy)

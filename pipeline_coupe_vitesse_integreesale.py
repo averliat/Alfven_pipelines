@@ -7,8 +7,9 @@ import os
 
 from pymses.filters import CellsToPoints
 from pymses.utils import constants as cst
-from pymses.analysis import Camera, raytracing, slicing
+from pymses.analysis import Camera, raytracing, slicing, splatting
 from pymses.analysis import ScalarOperator, FractionOperator, MaxLevelOperator
+import pymses.analysis 
 import matplotlib.pyplot as plt
 plt.ion()
 from matplotlib.colors import Normalize
@@ -20,23 +21,19 @@ import pipeline_temps_0_simulation as t_0
 
 
 
-#plt.style.use("pdf")
-#plt.style.use("aanda_modif")
-
-
 
 #-------------------------------------------------------
 #Entree le nom de la simulation et le numero de l'output
 #-------------------------------------------------------
-simu = 'M30_mu7_mach2_lr_jets_co30_vjets66'#'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_MHD_lr'
+simu = 'jet_fullM'#'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_10pourc_sink_seuil_haut'
 
 owner = 'averliat_alfven'
-num_output = 193
+num_output = 12
 
 save = True
-dir_save = 'Coupe_vitesse_integree'
+dir_save = 'Coupe_vitesse_integree_FFT'
 
-radius_zoom = 13
+radius_zoom = 1
 
 v_proj = True
 
@@ -63,6 +60,8 @@ transparence_sink_colmap = 0.4
 color_sink_velmap = 'limegreen'
 transparence_sink_velmap = 0.7
 
+force_center = True
+
 reposition_fig = True #Pour repositionner les figures ouvertes par matplotlib
 
 #Pour fermer toutes les figures avec matplotlib : plt.close('all')
@@ -80,8 +79,6 @@ if owner=='sapanais':
     path='/dsm/anais/storageA/magmist/'+simu+'/'
 if owner=='averliat_alfven':
     path='/drf/projets/alfven-data/averliat/'+simu+'/'
-if owner=='phennebe_alfven':
-    path='/drf/projets/alfven-data/phennebe/'+simu+'/'
     
 path_save='/home/averliat/these/analyses/'+simu+'/'+dir_save+'/'
 path_analyse='/home/averliat/these/analyses/'+simu+'/'
@@ -106,11 +103,12 @@ lbox_pc = ro.info['unit_length'].express(cst.pc)
 
 amr = ro.amr_source(["rho","vel","P","phi","g"])
 
-cell_source = CellsToPoints(amr)
-cells = cell_source.flatten()
+if force_center==False:
+    cell_source = CellsToPoints(amr)
+    cells = cell_source.flatten()
 
-pos = cells.points
-rho = cells["rho"]
+    pos = cells.points
+    rho = cells["rho"]
 
 
 
@@ -156,7 +154,7 @@ if title_time_cor == True:
 #Definition du centre des images et de leur niveau de zoom
 #---------------------------------------------------------
 #Position du "centre" de la simulation = endroit le plus dense
-if radius_zoom==5:
+if radius_zoom==5 or force_center==True:
     center = [0.5,0.5,0.5]
 else:
     arg_centre = np.argmax(rho)
@@ -179,16 +177,11 @@ if 'hugebox' in simu:
 if radius_zoom==10:
     radius=0.005/20.
 elif radius_zoom==11:
-    radius=0.07
-elif radius_zoom==12:
-    radius=0.15
-elif radius_zoom==13:
-    radius=0.055
-elif radius_zoom==14:
-    radius=0.055/2.
+    radius=0.10
 else:
     radius=zoom_v[radius_zoom-1]
 #radius=float(zoom_v[np.where(zoom_v==radius_zoom)])     #0.015#0.005 #Niveau de zoom correspondant au niveau '3' des images de "pipeline_image_unique.py"
+
 
 
 
@@ -239,8 +232,6 @@ if os.path.isfile(path+'output_'+str(num_output).zfill(5)+'/sink_'+str(num_outpu
         m_sinks,x_sinks,y_sinks,z_sinks=visualise_sink_AU(path,num_output)
         #size_sinks=20*np.tanh(25*m_sinks)
         size_sinks=20*np.sqrt(m_sinks)
-        if 'cluster' in simu:
-            size_sinks /= 10
 
         if radius_zoom != 5:  #centrage sur la plus grosse sink au lieu de rho max
             arg_biggest_sink=np.argmax(m_sinks)
@@ -275,6 +266,8 @@ class MidpointNormalize(Normalize):
 #-----------------
 #-----------------
 
+#mp=fft_projection.MapFFTProcessor(amr, ro.info)
+#mp=splatting.SplatterProcessor(amr, ro.info)#, rho_op)
 if selon_x==True:
     #--------------------------------------------
     #Calcul de la carte ou l'on regarde suivant x
@@ -282,14 +275,16 @@ if selon_x==True:
     cam_x = Camera(center=center,line_of_sight_axis='x',region_size=[2.*radius,2.*radius],distance=radius,far_cut_depth=radius,up_vector='z',map_max_size=512)
 
     rho_op = ScalarOperator(lambda dset: dset["rho"] ,  ro.info["unit_density"])
-    rt = raytracing.RayTracer(amr,ro.info,rho_op)
-    datamap = rt.process(cam_x, surf_qty=True)
+    #rt = raytracing.RayTracer(amr,ro.info,rho_op)
+    mp = splatting.SplatterProcessor(amr, ro.info, rho_op)
+    datamap = mp.process(cam_x, surf_qty=True)
     map_col = np.log10(datamap.map.T*lbox_cm)
 
     if v_proj == True:
         Vx_op = ScalarOperator(lambda dset: dset["vel"][...,0]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vx_op)
-        datamap_vx = rt.process(cam_x, surf_qty=True)
+        #rt = raytracing.RayTracer(amr,ro.info,Vx_op)
+        mp = splatting.SplatterProcessor(amr, ro.info, Vx_op)
+        datamap_vx = mp.process(cam_x, surf_qty=True)
         map_Vx = datamap_vx.map.T / datamap.map.T * factor_vel_km_s
 
 
@@ -385,14 +380,15 @@ if selon_y==True:
     cam_y = Camera(center=center,line_of_sight_axis='y',region_size=[2.*radius,2.*radius],distance=radius,far_cut_depth=radius,up_vector='x',map_max_size=512)
 
     rho_op = ScalarOperator(lambda dset: dset["rho"] ,  ro.info["unit_density"])
-    rt = raytracing.RayTracer(amr,ro.info,rho_op)
-    datamap = rt.process(cam_y, surf_qty=True)
+    mp = splatting.SplatterProcessor(amr, ro.info, rho_op)
+    datamap = mp.process(cam_y, surf_qty=True)
     map_col = np.log10(datamap.map.T*lbox_cm)
 
     if v_proj == True:
         Vy_op = ScalarOperator(lambda dset: dset["vel"][...,1]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vy_op)
-        datamap_vy = rt.process(cam_y, surf_qty=True)
+        #rt = raytracing.RayTracer(amr,ro.info,Vy_op)
+        mp = splatting.SplatterProcessor(amr, ro.info, Vy_op)
+        datamap_vy = mp.process(cam_y, surf_qty=True)
         map_Vy = datamap_vy.map.T / datamap.map.T * factor_vel_km_s
 
 
@@ -488,14 +484,15 @@ if selon_z==True:
     cam_z = Camera(center=center,line_of_sight_axis='z',region_size=[2.*radius,2.*radius],distance=radius,far_cut_depth=radius,up_vector='y',map_max_size=512)
 
     rho_op = ScalarOperator(lambda dset: dset["rho"] ,  ro.info["unit_density"])
-    rt = raytracing.RayTracer(amr,ro.info,rho_op)
-    datamap = rt.process(cam_z, surf_qty=True)
+    mp = splatting.SplatterProcessor(amr, ro.info, rho_op)
+    datamap = mp.process(cam_z, surf_qty=True)
     map_col = np.log10(datamap.map.T*lbox_cm)
 
     if v_proj == True:
         Vz_op = ScalarOperator(lambda dset: dset["vel"][...,2]*dset["rho"] ,  ro.info["unit_velocity"])
-        rt = raytracing.RayTracer(amr,ro.info,Vz_op)
-        datamap_vz = rt.process(cam_z, surf_qty=True)
+        #rt = raytracing.RayTracer(amr,ro.info,Vz_op)
+        mp = splatting.SplatterProcessor(amr, ro.info, Vz_op)
+        datamap_vz = mp.process(cam_z, surf_qty=True)
         map_Vz = datamap_vz.map.T / datamap.map.T * factor_vel_km_s
 
 

@@ -41,15 +41,15 @@ print('dbg:import ok')
 #-------------------------------------------------------
 #Entree le nom de la simulation et le numero de l'output
 #-------------------------------------------------------
-simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_MHD_lr'#shr_bigbox_50pourc'
+simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_50pourc'
 
 owner = 'averliat_alfven'
-num_output = 152
+num_output = 59
 
 save = True
 dir_save = 'Article_1'#'Coupe_vitesse_integree'
 
-radius_zoom = 8
+radius_zoom = 7
 
 v_proj = True
 
@@ -65,44 +65,26 @@ selon_x = False
 selon_y = False
 selon_z = False
 selon_coord = True
-face_on=True
-edge_on=True
+view='both' #'face-on' #'edge-on'
 
-#=========================================
+#====================
 #Calcul des directions face-on et edge-on:
-#=========================================
 #Pour recherche du edge-on : mettre view='edge-on' et changer les coord ci-dessous
 #Ensuite faire la figure face-on
-if num_output==59:
-    view_diagram_edgeon=np.array([1,0,2]) #edge-on
-    up_vector_edgeon=np.array([0,-0.15,1]) #edge-on
-elif num_output==38:
-    view_diagram_edgeon=np.array([1.3,0,2]) #edge-on
-    up_vector_edgeon=np.array([0,-0.07,1]) #edge-on
-elif num_output==22:
-    view_diagram_edgeon=np.array([1.5,0,2]) #edge-on
-    up_vector_edgeon=np.array([0,-0.04,1]) #edge-on
-else:
-    #view_diagram_edgeon=np.array([0,0,1]) #edge-on
-    #up_vector_edgeon=np.array([0,1,0]) #edge-on
-    view_diagram_edgeon=np.array([1,0,0]) #edge-on
-    up_vector_edgeon=np.array([0,0,1]) #edge-on
-
+view_diagram_edgeon=np.array([1,0,2]) #edge-on
+up_vector_edgeon=np.array([0,-0.15,1]) #edge-on
 
 norm_view_diagram_edgeon_2=np.sum(view_diagram_edgeon**2)
 view_diagram_faceon=up_vector_edgeon-np.sum(up_vector_edgeon*view_diagram_edgeon)*view_diagram_edgeon/norm_view_diagram_edgeon_2
 up_vector_faceon=view_diagram_edgeon
 
-#vd(output59)=[1,0,2]
-#uv(output59)=[0,-0.15,1]
-
-#vd(output38)=[1.3,0,2]
-#uv(output38)=[0,-0.07,1]
-
-#vd(output22)=[1.5,0,2]
-#uv(output22)=[0,-0.04,1]
-#=========================================
-
+if (selon_coord==True and view=='face-on'):
+    view_diagram=view_diagram_faceon
+    up_vector=up_vector_faceon
+elif (selon_coord==True and view=='edge-on'):
+    view_diagram=view_diagram_edgeon
+    up_vector=up_vector_faceon
+#====================
 
 vmin_vel = None#-0.25
 vmax_vel = None#-vmin_vel
@@ -219,7 +201,7 @@ zoom_v=[0.045, 0.015, 0.005, 0.005/3., 0.5]
 
 
 if 'bigbox' or 'jet' in simu:
-    zoom_v=[0.045/2, 0.015/2, 0.005/2, 0.005/3./2, 0.5, 0.5/2, 0.005/2/1.5, 0.005/2/1.2]
+    zoom_v=[0.045/2, 0.015/2, 0.005/2, 0.005/3./2, 0.5, 0.5/2, 0.005/2/1.5]
     if radius_zoom==6:
         center = [0.5,0.5,0.5]
 
@@ -335,7 +317,7 @@ if selon_x==True:
     #Debut figure coldens
     plt.figure()
     ax=plt.gca()
-    im1=plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)#,cmap='plasma')   
+    im1=plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)   
     ax.yaxis.set_ticks_position('right')
     ax.yaxis.set_label_position("right")
     plt.locator_params(axis='x', nbins=7)
@@ -378,7 +360,7 @@ if selon_x==True:
         plt.locator_params(axis='x', nbins=7)
         ax=plt.gca()
         norm = MidpointNormalize(midpoint=0)  #Pour avoir le centre de la colormap a 0
-        im2=plt.imshow(-map_Vx,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
+        im2=plt.imshow(map_Vx,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
         #ax.yaxis.set_ticks_position('left')
         #ax.yaxis.set_ticklabels([])
         #ax2.yaxis.set_ticklabels(horizontalalignment = "left")
@@ -413,8 +395,7 @@ if selon_x==True:
 
 
 
-#if (selon_coord==True and view!='both'):
-def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag_compl):
+if (selon_coord==True and view!='both'):
     #-----------------------------------------------------------
     #Calcul de la carte ou l'on regarde suivant un vecteur donne
     #-----------------------------------------------------------
@@ -432,28 +413,22 @@ def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag
         map_Vx = datamap_vx.map.T / datamap.map.T * factor_vel_km_s
 
 
-    #--------------------
     #Debut figure coldens
-    #--------------------
     plt.figure()
     ax=plt.gca()
-    im1=plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)#,cmap='plasma')   
-    if pos_colorbar_dens=='left':
-        ax.yaxis.set_ticks_position('right')
-        ax.yaxis.set_label_position("right")
+    im1=plt.imshow(map_col,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower', vmin=vmin_dens, vmax=vmax_dens)   
+    ax.yaxis.set_ticks_position('right')
+    ax.yaxis.set_label_position("right")
+    plt.locator_params(axis='x', nbins=7)
+    #ax1.yaxis.set_ticklabels([])
 
     if sink_plot==True:
         for i in range(len(m_sinks)):
             if (y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au)&(z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au):
                 plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_colmap,markersize=size_sinks[i],alpha=transparence_sink_colmap)
-    if tag_compl=='edgeon_':
-        ax.set_xlabel(r'$x_d$ (AU)')     
-        ax.set_ylabel(r'$z_d$ (AU)')
-    if tag_compl=='faceon_':
-        ax.set_xlabel(r'$x_d$ (AU)')     
-        ax.set_ylabel(r'$y_d$ (AU)')
+    ax.set_xlabel(r'$y$ (AU)')     
+    ax.set_ylabel(r'$z$ (AU)')
     plt.xticks(rotation=90)
-    plt.locator_params(axis='x', nbins=7)
 
     #if title_time==True:
         #plt.title('Time = '+str(int(simulation_time))+' years')
@@ -463,14 +438,11 @@ def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag
 
     # Adding the colorbar
     divider1 = make_axes_locatable(ax)
-    if pos_colorbar_dens=='left':
-        cax = divider1.append_axes("left", size="6%", pad=0.15)
-        cbar1 = plt.colorbar(im1, cax=cax)#, **kw)
-        cbar1.ax.yaxis.set_ticks_position('left')
-        cbar1.ax.yaxis.set_label_position('left')
-    else:
-        cax = divider1.append_axes("right", size="6%", pad=0.15)
-        cbar1 = plt.colorbar(im1, cax=cax)#, **kw)
+    cax = divider1.append_axes("left", size="6%", pad=0.15)
+    #cax,kw = mpl.colorbar.make_axes([ax],location='left')
+    cbar1 = plt.colorbar(im1, cax=cax)#, **kw)
+    cbar1.ax.yaxis.set_ticks_position('left')
+    cbar1.ax.yaxis.set_label_position('left')
 
     cbar1.set_label(r'$\text{log} \left( N \right) \, \, \left( cm^{-2} \right)$')
     if radius_zoom==5:
@@ -478,55 +450,36 @@ def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag
         plt.ylim([0,lbox_au])
     if save==True:
         plt.tight_layout(pad=0.1) #pad en inch si besoin
-        plt.savefig(path_save+simu+'_dens_'+tag_compl+str(radius_zoom)+'_'+str(num_output)+'.pdf')#, bbox_inches='tight')
+        plt.savefig(path_save+simu+'_dens_test_'+str(radius_zoom)+'_'+str(num_output)+'.pdf')#, bbox_inches='tight')
 
 
-
-
-
-
-
-    #--------------------
-    #Debut figure velproj
-    #--------------------
     if v_proj == True:
         plt.figure()
         plt.xticks(rotation=90)
         plt.locator_params(axis='x', nbins=7)
         ax=plt.gca()
         norm = MidpointNormalize(midpoint=0)  #Pour avoir le centre de la colormap a 0
-        im2=plt.imshow(-map_Vx,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
-        if pos_colorbar_vel=='left':
-            ax.yaxis.set_ticks_position('right')
-            ax.yaxis.set_label_position("right")
-
+        im2=plt.imshow(map_Vx,extent=[(-radius+center[1])*lbox_au,(radius+center[1])*lbox_au,(-radius+center[2])*lbox_au,(radius+center[2])*lbox_au],origin='lower',cmap='RdBu_r',norm=norm, vmin=vmin_vel, vmax=vmax_vel)
+        #ax.yaxis.set_ticks_position('left')
+        #ax.yaxis.set_ticklabels([])
+        #ax2.yaxis.set_ticklabels(horizontalalignment = "left")
+        #ax2.yaxis.tick_right()
         if sink_plot==True:
             for i in range(len(m_sinks)):
                 if (y_sinks[i]>(-radius+center[1])*lbox_au)&(y_sinks[i]<(radius+center[1])*lbox_au)&(z_sinks[i]>(-radius+center[2])*lbox_au)&(z_sinks[i]<(radius+center[2])*lbox_au):
                     plt.plot(y_sinks[i],z_sinks[i],'.',color=color_sink_velmap,markersize=size_sinks[i],alpha=transparence_sink_velmap)
-        if tag_compl=='edgeon_':
-            plt.xlabel(r'$x_d$ (AU)')     
-            plt.ylabel(r'$z_d$ (AU)')
-        if tag_compl=='faceon_':
-            plt.xlabel(r'$x_d$ (AU)')     
-            plt.ylabel(r'$y_d$ (AU)')
+        plt.xlabel(r'$y$ (AU)')     
+        plt.ylabel(r'$z$ (AU)')
         
         #if title_time==True:
             #plt.title('Time = '+str(int(simulation_time))+' years')
         if title_time_cor==True:
-            plt.tight_layout(pad=0.1) #pad en inch si besoin
             plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years')
 
-        # Adding the colorbar
         divider2 = make_axes_locatable(ax)
-        if pos_colorbar_vel=='left':
-            cax = divider2.append_axes("left", size="6%", pad=0.15)
-            cbar2 = plt.colorbar(im2, cax=cax)#, **kw)
-            cbar2.ax.yaxis.set_ticks_position('left')
-            cbar2.ax.yaxis.set_label_position('left')
-        else:
-            cax = divider2.append_axes("right", size="6%", pad=0.15)
-            cbar2 = plt.colorbar(im2, cax=cax)#, **kw)
+        cax = divider2.append_axes("right", size="6%", pad=0.15)
+        #cax,kw = mpl.colorbar.make_axes([ax],location='right')
+        cbar2 = plt.colorbar(im2, cax=cax)#, **kw)
 
         cbar2.set_label(r'$v_x \, \left( km.s^{-1} \right) $')  
         if radius_zoom==5:
@@ -534,30 +487,11 @@ def carte_dens_vel(view_diagram,up_vector,pos_colorbar_dens,pos_colorbar_vel,tag
             plt.ylim([0,lbox_au])
         if save==True: 
             plt.tight_layout(pad=0.1) #pad en inch si besoin
-            plt.savefig(path_save+simu+'_vel_'+tag_compl+str(radius_zoom)+'_'+str(num_output)+'.pdf')#, bbox_inches='tight')
-
-    return
-
-
+            plt.savefig(path_save+simu+'_vel_test_'+str(radius_zoom)+'_'+str(num_output)+'.pdf')#, bbox_inches='tight')
+        #f.subplots_adjust(wspace=0.3)
+        #plt.setp([a.get_xticklabels() for a in f.axes[:-1]], visible=False)
 
 
-#=================================================
-#Trace des cartes pour les vues edge_on et face-on 
-#=================================================
-#Edge-on:
-if edge_on==True:
-    pos_colorbar_dens='right'
-    pos_colorbar_vel='left'
-    tag_compl='edgeon_'
-    carte_dens_vel(view_diagram_edgeon,up_vector_edgeon,pos_colorbar_dens,pos_colorbar_vel,tag_compl)
-#Face-on:
-if face_on==True:
-    pos_colorbar_dens='left'
-    pos_colorbar_vel='right'
-    tag_compl='faceon_'
-    carte_dens_vel(view_diagram_faceon,up_vector_faceon,pos_colorbar_dens,pos_colorbar_vel,tag_compl)
-#=================================================
-#=================================================
 
 
 

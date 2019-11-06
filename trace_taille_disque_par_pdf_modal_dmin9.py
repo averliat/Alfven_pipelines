@@ -22,18 +22,18 @@ if __name__ == '__main__':
 #-----------------------------------------------------------
 #Noms des simulations et caracteristiques du calcul du rayon
 #-----------------------------------------------------------
-    simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_lr'
+    simu = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_rot1'
     tag = '50_shr_bigbox'
 
     output_min = 'None'
-    output_max = 68
+    output_max = 102
 
     seuil_rho = 1e-10
 
 
 
 
-def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',marker='.',seuil_rho=1e-10):
+def trace_taille_disque(simu,tag,output_min,output_max,t1=0.,legend='',marker='.',seuil_rho=1e-10):
 #------------------
 #Differents chemins
 #------------------
@@ -44,7 +44,7 @@ def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',mark
         output_0 = int(ref[0])
         time_0 = ref[1]
         output_min = output_0
-        file_save = 'Rayon_disque_par_pdf'+str(output_min)+'_'+str(output_max)+'.hdf5'
+        file_save = 'Rayon_disque_par_pdf_modal_dmin9_'+str(output_min)+'_'+str(output_max)+'.hdf5'
 
 
 
@@ -62,6 +62,8 @@ def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',mark
     mass_disk_tab=h5f['mass_disk_tab'][:]
     log_rho_disk_tab=h5f['log_rho_disk_tab'][:]
     mag_mean_broad_tab=h5f['mag_mean_broad_tab'][:]
+    median_rad_loc_tab=h5f['median_rad_loc_tab'][:]
+    rad_estim_tab=h5f['rad_estim_tab'][:]
 
     h5f.close()
 
@@ -96,7 +98,7 @@ def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',mark
     plt.xlabel(ur'Numero output')
     plt.ylabel(ur'Rayon moyen du disque ($AU$)')
     plt.legend(loc='best')
-    
+
     plt.figure(2)
     plt.plot(time_tab-t1,mean_rad_loc_tab, marker=marker, label=legend+'  - '+tag)
     plt.xlabel(ur'Temps ($Myr$)')
@@ -110,7 +112,9 @@ def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',mark
     plt.legend(loc='best')
     '''
     plt.figure(4)
-    plt.plot(time_cor_tab,mean_rad_loc_tab, marker='.', label=tag2)
+    plt.plot(time_cor_tab,rad_estim_tab,marker='.', label=tag)
+    #plt.plot(time_cor_tab,median_rad_loc_tab, color='r')#,marker='+')
+    #plt.plot(time_cor_tab,rad_estim_tab, color='g')#,marker='o')
     plt.xlabel(ur'Temps corrigé ($Myr$)')
     plt.ylabel(ur'Rayon moyen du disque ($AU$)')
     plt.legend(loc='best')
@@ -145,7 +149,7 @@ def trace_taille_disque(simu,tag,tag2,output_min,output_max,t1=0.,legend='',mark
 
 
 if __name__ == '__main__':
-    trace_taille_disque(simu,tag,tag,output_min,output_max)
+    trace_taille_disque(simu,tag,output_min,output_max)
 
 
 

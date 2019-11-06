@@ -141,20 +141,20 @@ def trace_angle_gradient_vitesse(simu,tag,output,R_min,R_max,dr,legend,marker,an
 
     if ang_absolu==True:
         plt.figure()
-        plt.semilogx(shells_au, ang_x_tab, marker='.',color=colorspts[2], label=r'$x$ projection')
+        plt.semilogx(shells_au, ang_x_tab, marker='.',color=colorspts[2], label=r'Edge-on projection 1')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"Angle (°)")
         plt.legend(loc='best')
 
         #plt.figure()
-        plt.semilogx(shells_au, ang_y_tab, marker='.',color=colorspts[4], label=r'$y$ projection')
+        plt.semilogx(shells_au, ang_y_tab, marker='.',color=colorspts[4], label=r'Edge-on projection 2')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"Angle (°)")
         plt.legend(loc='best')
-        plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years  ~~~~~~~~~ $ \\varepsilon= 50 \%$')
+        plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years  ~~~~~~ $ \\varepsilon= 50 \%$ ~~~~~~ $\\beta = 1 \%$')
 
         #plt.figure()
-        plt.semilogx(shells_au, ang_z_tab, marker='.',color=colorspts[6], label=r'$z$ projection')
+        plt.semilogx(shells_au, ang_z_tab, marker='.',color=colorspts[6], label=r'Face-on projection')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"Angle (°)")
         plt.legend(loc='best')
@@ -166,20 +166,20 @@ def trace_angle_gradient_vitesse(simu,tag,output,R_min,R_max,dr,legend,marker,an
 
     if ang_relat==True:
         plt.figure()
-        plt.semilogx(shells_au, ang_x_tab_recal, marker='.',color=colorspts[2], label=r'$x$ projection')
+        plt.semilogx(shells_au, ang_x_tab_recal, marker='.',color=colorspts[2], label=r'Edge-on projection 1')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"Angle (°)")
         plt.legend(loc='best')
-        plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years ~~~~~~~~~ $\\varepsilon= 50 \%$')
+        plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years  ~~~~~~ $ \\varepsilon= 50 \%$ ~~~~~~ $\\beta = 1 \%$')
 
         #plt.figure()
-        plt.semilogx(shells_au, ang_y_tab_recal, marker='.',color=colorspts[4], label=r'$y$ projection')
+        plt.semilogx(shells_au, ang_y_tab_recal, marker='.',color=colorspts[4], label=r'Edge-on projection 2')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"Angle (°)")
         plt.legend(loc='best')
 
         #plt.figure()
-        plt.semilogx(shells_au, ang_z_tab_recal, marker='.',color=colorspts[6], label=r'$z$ projection')
+        plt.semilogx(shells_au, ang_z_tab_recal, marker='.',color=colorspts[6], label=r'Face-on projection')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"Angle (°)")
         plt.legend(loc='best')
@@ -192,20 +192,20 @@ def trace_angle_gradient_vitesse(simu,tag,output,R_min,R_max,dr,legend,marker,an
 
     if omega==True:
         plt.figure()
-        plt.loglog(shells_au, omega_x_tab, marker='.',color=colorspts[2], label=r'$x$ projection')
+        plt.loglog(shells_au, omega_x_tab, marker='.',color=colorspts[2], label=r'Edge-on projection 1')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"$\Omega$  $\left( km.s^{-1}.pc^{-1} \right)")
         plt.legend(loc='best')
 
         #plt.figure()
-        plt.loglog(shells_au, omega_y_tab, marker='.',color=colorspts[4], label=r'$y$ projection')
+        plt.loglog(shells_au, omega_y_tab, marker='.',color=colorspts[4], label=r'Edge-on projection 2')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"$\Omega$  $\left( km.s^{-1}.pc^{-1} \right)$")
         plt.legend(loc='best')
-        plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years ~~~~~~~~~ $\\varepsilon = 50 \%$')
+        plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years  ~~~~~~ $ \\varepsilon= 50 \%$ ~~~~~~ $\\beta = 1 \%$')
 
         #plt.figure()
-        plt.loglog(shells_au, omega_z_tab, marker='.',color=colorspts[6], label=r'$z$ projection')
+        plt.loglog(shells_au, omega_z_tab, marker='.',color=colorspts[6], label=r'Face-on projection')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"$\Omega$  $\left( km.s^{-1}.pc^{-1} \right)$")
         plt.legend(loc='best')
@@ -218,20 +218,20 @@ def trace_angle_gradient_vitesse(simu,tag,output,R_min,R_max,dr,legend,marker,an
 
     if moment_spec==True:
         plt.figure()
-        plt.loglog(shells_au, moment_spec_x_tab, marker='.',color=colorspts[2], label=r'$x$ projection')
+        plt.loglog(shells_au, moment_spec_x_tab, marker='.',color=colorspts[2], label=r'Edge-on projection 1')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"$j$  $\left( km.s^{-1}.pc \right)$")
         plt.legend(loc='best')
 
         #plt.figure()
-        plt.loglog(shells_au, moment_spec_y_tab, marker='.',color=colorspts[4], label=r'$y$ projection')
+        plt.loglog(shells_au, moment_spec_y_tab, marker='.',color=colorspts[4], label=r'Edge-on projection 2')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"$j$  $\left( km.s^{-1}.pc \right)$")
         plt.legend(loc='best')
-        plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years ~~~~~~~~~ $\\varepsilon= 50 \%$')
+        plt.title('Time = '+str(int(simulation_time - ref[1]*1e6))+' years  ~~~~~~ $ \\varepsilon= 50 \%$ ~~~~~~ $\\beta = 1 \%$')
 
         #plt.figure()
-        plt.loglog(shells_au, moment_spec_z_tab, marker='.',color=colorspts[6], label=r'$z$ projection')
+        plt.loglog(shells_au, moment_spec_z_tab, marker='.',color=colorspts[6], label=r'Face-on projection')
         plt.xlabel(ur'Radius (AU)')
         plt.ylabel(ur"$j$  $\left( km.s^{-1}.pc \right)$")
         plt.legend(loc='best')

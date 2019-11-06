@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import trace_taille_disque_par_pdf as ttdpp
+import article1_trace_taille_disque_par_pdf as ttdpp
 
 
 
@@ -97,15 +97,12 @@ for i in range(len(tag)):
     ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink',tag[i],'None',output_max[i],t1[i],legend[i],'.')
 '''
 
+tag=['10','20','50','50','50','50','50']
+tag2=['','','','_lr','_MHD_lr','_niMHD_lr','_rot1']
+legend=['','','','','','','']
+marker=['+','x','.','.','.','.','.']
 
-
-tag=['10','20','50','50']
-tag2=['','','','_rot1']
-#tag3=['','_lr','_MHD_lr','_niMHD_lr','_MHD']#,'_rot1']
-legend=['','','','']
-marker=['+','.','x','p']
-
-output_max=[440,400,480,102]
+output_max=[440,400,480,68,114,85,102]
 
 t1=[0,0,0,0,0,0,0]
 
@@ -113,43 +110,10 @@ base_simu='B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_'
 
 
 for i in range(len(tag)):
+    ind=i
     i=len(tag)-i-1
-    ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut'+tag2[i],tag[i],tag[i]+tag2[i],'None',output_max[i],t1[i],legend[i],'.')
+    ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut'+tag2[i],tag[i],'None',output_max[i],t1[i],legend[i],'.',ind=ind,tagtot=len(tag))
 
 
-
-'''
-tag=['10','50','50','50','50','50']
-tag2=['','','_lr','_MHD_lr','_niMHD_lr','_rot1']
-legend=['','','','','','']
-marker=['+','.','x','p','P','>']
-
-output_max=[440,480,68,114,85,102]
-
-t1=[0,0,0,0,0,0,0]
-
-base_simu='B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_'
-
-
-for i in range(len(tag)):
-    i=len(tag)-i-1
-    ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut'+tag2[i],tag[i],tag2[i],'None',output_max[i],t1[i],legend[i],'.')
-'''
-
-'''
-tag=['50','50','50','50','50']
-tag2=['','_lr','_MHD_lr','_niMHD_lr','_MHD']#,'_rot1']
-legend=['','','','','','']
-marker=['+','.','x','p','P','>']
-
-output_max=[480,68,114,85,742]#,102]
-
-t1=[0,0,0,0,0,0,0]
-
-base_simu='B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_'
-
-
-for i in range(len(tag)):
-    i=len(tag)-i-1
-    ttdpp.trace_taille_disque(base_simu+tag[i]+'pourc_sink_seuil_haut'+tag2[i],tag[i],tag2[i],'None',output_max[i],t1[i],legend[i],'.')
-'''
+#plt.tight_layout(pad=0.1) #pad en inch si besoin
+#plt.savefig('/home/averliat/these/analyses/article1_figures/Taille_disk_10_20_50.pdf')

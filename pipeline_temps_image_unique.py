@@ -29,10 +29,10 @@ import pipeline_temps_0_simulation as t_0
 #--------------------------------------------
 #Caracteristiques de la simulation consideree
 #--------------------------------------------
-simu_ref = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_10pourc'
-num_output_ref = 45
+simu_ref = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_MHD_lr_modifsink'
+num_output_ref = 306
 
-simu_a_comparer = 'B335_noturb_norot_hydro_pert_asym_aleatoire_shr_bigbox_60pourc'
+simu_a_comparer = 'B335_noturb_norot_hydro_pert_asym_aleatoire_bigbox_50pourc_sink_seuil_haut_MHD_lr'
 
 
 recalage_temporel = True
